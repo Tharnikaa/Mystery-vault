@@ -17,3 +17,6 @@ Desktop.ini
 
 # Logs
 *.log
+
+# Webapp ignore (desktop JFrame application)
+src/main/webapp/

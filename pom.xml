@@ -35,7 +35,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>com.mysteryvault.Main</mainClass>
+                            <mainClass>com.mysteryvault.MysteryVaultApplication</mainClass>
                         </manifest>
                     </archive>
                 </configuration>

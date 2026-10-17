@@ -1,12 +1,16 @@
-# Mystery Vault – Uncover the Truth
-**Detective Mystery Desktop Game UI in Java Swing, AWT, and Java 2D**
+# Mystery Vault — Uncover the Truth
+**Detective Mystery Desktop Game UI & Team Integration Architecture**
 
 ---
 
 ## 🔍 Overview
-**Mystery Vault – Uncover the Truth** is a cinematic desktop mystery detective game UI created using **Java Swing, AWT, and Java 2D**.
+**Mystery Vault – Uncover the Truth** is a cinematic desktop mystery detective game built with **Java Swing, AWT, and Java 2D** (Java 17+).
 
-The entire UI has been crafted to faithfully recreate all **12 screens** from the reference specification, maintaining the dark navy, charcoal, and gold aesthetic, glassmorphic card containers, custom gradients, typography, and interactive navigation.
+This repository contains:
+1. **Module 13 (Application Shell / Complete UI):** All 12 game screens faithfully recreated according to the design reference specification.
+2. **Module 4 (Clue Network Graph):** Dedicated Java 2D graph renderer (`CustomGraphCanvas`) and pure data model (`Connection`).
+3. **Module 11 (Final Deduction / Case Solver):** Standalone deduction solver engine (`CaseSolverEngine`) and evaluation DTOs.
+4. **Hexagonal Integration Seams:** Interface-driven presentation ports (`ui.swing.ports.*`) and deterministic mock adapters (`ui.swing.mock.*`) enabling independent frontend operation prior to merging backend modules from Members 1, 2, and 3.
 
 ---
 
@@ -18,39 +22,39 @@ The entire UI has been crafted to faithfully recreate all **12 screens** from th
   - Cyan / Teal Highlights: `#19c3b8`, glowing status dots and completed milestones
   - Crimson / Warning Accents: `#e14b4b`, conflict alerts and timeline warnings
 - **Java 2D Graphics:**
-  - Custom anti-aliased geometry, subpixel text rendering, and high-quality image bicubic scaling
-  - Custom painted rounded buttons with interactive hover and press states
-  - Reusable progress meters (`StatBar`), status badges (`Badge`), and headers (`ScreenHeader`)
+  - Subpixel anti-aliasing (`RenderingHints.KEY_TEXT_ANTIALIAS_ON` and `KEY_ANTIALIAS_ON`)
+  - Custom rounded buttons with interactive hover/press states (`CustomButton`)
+  - Interactive node network visualization (`CustomGraphCanvas`)
 
 ---
 
-## 🖥️ The 12 Screens Implemented
+## 🖥️ The 12 Screen Panels
 
-| # | Screen Name | Class Name | Description |
+| # | Screen Name | Panel Class | Associated Port |
 |---|---|---|---|
-| **1** | **Main Menu** | [`MainMenuScreen`](src/main/java/com/mysteryvault/screens/MainMenuScreen.java) | Atmospheric detective desk artwork, title logo, subtitle, `NEW GAME`, `LOAD GAME`, `SETTINGS`, and `QUIT` buttons. |
-| **2** | **Detective Profile** | [`DetectiveProfileScreen`](src/main/java/com/mysteryvault/screens/DetectiveProfileScreen.java) | Circular framed noir detective avatar, Rank, 37 XP progress bar, 4-stat cards (Cases Solved, Accuracy, Cases Attempted, Best Score), and `CONTINUE` button. |
-| **3** | **Case Selection** | [`CaseSelectionScreen`](src/main/java/com/mysteryvault/screens/CaseSelectionScreen.java) | 2x2 grid of case cards (The Stolen Diamond, The Library Code, The Poisoned Drink [selected], The Missing Prototype) with status badges and `START INVESTIGATION` button. |
-| **4** | **Main Investigation Hub** | [`InvestigationHubScreen`](src/main/java/com/mysteryvault/screens/InvestigationHubScreen.java) | Case title & subtitle, 8 action tiles (`SUSPECTS`, `EVIDENCE`, `TIMELINE`, `INTERROGATE`, `SEARCH`, `CLUES`, `CONNECTIONS`, `ANALYZE CASE`), and bottom progress tracker. |
-| **5** | **Suspect Screen** | [`SuspectScreen`](src/main/java/com/mysteryvault/screens/SuspectScreen.java) | 3 suspect cards (Arjun, Meera [highlighted], Rohan) with portraits, suspicion meters, dossier information, and `VIEW EVIDENCE` / `INTERROGATE` actions. |
-| **6** | **Evidence Investigation** | [`EvidenceScreen`](src/main/java/com/mysteryvault/screens/EvidenceScreen.java) | Split view: evidence items list (E01 to E05), high-res inspection photo, crime scene metadata, and `EXAMINE`, `SEND TO LAB`, `LINK TO SUSPECT` buttons. |
-| **7** | **Interrogation** | [`InterrogationScreen`](src/main/java/com/mysteryvault/screens/InterrogationScreen.java) | Left suspect vitals panel (Trust 45%, Suspicion 72%), right dialogue log with detective & suspect speech bubbles, question input, and `SHOW EVIDENCE` / `CHALLENGE STATEMENT` / `EXIT`. |
-| **8** | **Investigation Timeline** | [`TimelineScreen`](src/main/java/com/mysteryvault/screens/TimelineScreen.java) | Vertical glowing timeline with timestamps, events, warning box (`TIMELINE CONFLICT DETECTED`), `ADD EVENT`, `EDIT`, and `ANALYZE TIMELINE`. |
-| **9** | **Case Connection Engine** | [`ConnectionEngineScreen`](src/main/java/com/mysteryvault/screens/ConnectionEngineScreen.java) | Interactive node network graph connecting Victim to suspects and evidence with glowing links, right sidebar for Connections Found, and `RUN ANALYSIS`. |
-| **10** | **Case Analysis** | [`CaseAnalysisScreen`](src/main/java/com/mysteryvault/screens/CaseAnalysisScreen.java) | Analysis completion meters (Timeline, Evidence, Statement, Connection 90%), Results breakdown card, and `VIEW RESULTS` button. |
-| **11** | **Final Deduction** | [`FinalDeductionScreen`](src/main/java/com/mysteryvault/screens/FinalDeductionScreen.java) | "WHO IS RESPONSIBLE?" form with radio selection for culprit, motive dropdown, supporting evidence checkboxes, and `SUBMIT DEDUCTION`. |
-| **12** | **Case Result** | [`CaseResultScreen`](src/main/java/com/mysteryvault/screens/CaseResultScreen.java) | Victory card with gold trophy, "CASE SOLVED", 92/100 score badge, accuracy stats, Master Detective rank, and `NEXT CASE`, `CASE REPORT`, `RETURN TO MENU`. |
+| **1** | **Main Menu** | `MainMenuPanel` | *Shell / Save-Load* |
+| **2** | **Detective Profile** | `DetectiveProfilePanel` | `ProfileViewPort` |
+| **3** | **Case Selection** | `CaseSelectionPanel` | `CaseViewPort` |
+| **4** | **Main Investigation Hub** | `InvestigationHubPanel` | `CaseViewPort` |
+| **5** | **Suspect Screen** | `SuspectPanel` | `SuspectViewPort` |
+| **6** | **Evidence Investigation** | `EvidencePanel` | `EvidenceViewPort` |
+| **7** | **Interrogation** | `InterrogationPanel` | `InterrogationViewPort`, `SuspectViewPort` |
+| **8** | **Investigation Timeline** | `TimelinePanel` | `TimelineViewPort` |
+| **9** | **Case Connection Engine** | `ConnectionPanel` | `ConnectionViewPort` |
+| **10** | **Case Analysis** | `AnalysisPanel` | `AnalysisViewPort` |
+| **11** | **Final Deduction** | `DeductionPanel` | `DeductionViewPort` |
+| **12** | **Case Result** | `ResultPanel` | `DeductionViewPort`, `ReportViewPort` |
 
 ---
 
-## 🚀 How to Run the Application
+## 🚀 Running the Application
 
-### Option 1: Using the provided PowerShell scripts
+### Option 1: Using PowerShell scripts
 ```powershell
-# Compile the project and copy assets
+# Compile main sources & tests, run unit tests, and package JAR
 .\build.ps1
 
-# Run the desktop application
+# Launch the desktop application
 .\run.ps1
 ```
 
@@ -59,20 +63,27 @@ The entire UI has been crafted to faithfully recreate all **12 screens** from th
 java -jar target/mystery-vault-1.0.0.jar
 ```
 
-### Option 3: Using standard Maven (if installed)
-```bash
-mvn clean compile
-mvn exec:java -Dexec.mainClass="com.mysteryvault.Main"
+### Option 3: Double-click Batch File
+```cmd
+run.bat
 ```
 
 ---
 
-## 🎮 Navigation Controls
-- **In-Game Flow:** Every button in the game logically moves between screens (e.g., Main Menu -> Profile -> Case Selection -> Hub -> Suspects -> Evidence -> Interrogation -> Timeline -> Connection Engine -> Analysis -> Final Deduction -> Result -> Menu).
+## 🎮 Navigation & Evaluation Controls
+- **In-Game Flow:** Buttons guide players logically through the mystery investigation.
 - **Back Button (`<`):** Navigates back in history on all sub-screens.
-- **Quick Jump Switcher:** A dropdown bar at the bottom lets you jump directly to any of the 12 screens instantly for evaluation.
+- **Quick Jump Switcher:** A dropdown bar at the bottom allows instantaneous evaluation of any of the 12 screens.
 - **Keyboard Hotkeys:**
   - `1` through `9`: Screens 1 to 9
   - `0`: Screen 10 (Case Analysis)
   - `-`: Screen 11 (Final Deduction)
   - `=`: Screen 12 (Case Result)
+  - `Ctrl + N`: Open New Case Dialog
+
+---
+
+## 📚 Team Integration Documentation
+- **[FRONTEND_INTEGRATION_GUIDE.md](FRONTEND_INTEGRATION_GUIDE.md):** Detailed guide on connecting Members 1, 2, and 3 services.
+- **[INTEGRATION_NOTES.md](INTEGRATION_NOTES.md):** Implemented modules, public API contracts, and known limitations.
+- **[docs/API_CONTRACT.md](docs/API_CONTRACT.md):** Team API contract comparison and Pending Team Approval items.
