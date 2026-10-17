@@ -7,6 +7,7 @@ import com.mysteryvault.service.dto.DeductionResult;
 import com.mysteryvault.ui.swing.ports.DeductionViewPort;
 
 import java.util.HashSet;
+import java.util.Set;
 
 public class MockDeductionViewPort implements DeductionViewPort {
 
@@ -34,8 +35,17 @@ public class MockDeductionViewPort implements DeductionViewPort {
 
     @Override
     public DeductionResult submitDeduction(DeductionRequest request) {
-        CaseContext context = new CaseContext(request.getCaseId(), "THE POISONED DRINK",
-                request.getSupportingEvidenceIds(), new HashSet<>(), new HashSet<>());
+        Set<String> discovered = new HashSet<>(java.util.Arrays.asList("E01", "E02", "E03", "E04", "E05", "E06", "E07", "E08"));
+        Set<String> clues = new HashSet<>(java.util.Arrays.asList("C01", "C02", "C03", "C04", "C05", "C06"));
+        Set<String> contradictions = new HashSet<>(java.util.Arrays.asList("K01", "K02", "K03"));
+
+        CaseContext context = new CaseContext(
+                request.getCaseId(),
+                "THE POISONED DRINK",
+                discovered,
+                clues,
+                contradictions
+        );
         this.lastResult = solverEngine.evaluate(request, context);
         return this.lastResult;
     }

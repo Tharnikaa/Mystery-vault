@@ -73,6 +73,9 @@ public class CustomGraphCanvas extends JComponent {
     public void setSelectedNode(GraphNode node) {
         this.selectedNode = node;
         repaint();
+        if (selectionListener != null && node != null) {
+            selectionListener.accept(node);
+        }
     }
 
     public GraphNode getSelectedNode() {

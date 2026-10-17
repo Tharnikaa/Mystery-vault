@@ -10,6 +10,11 @@ import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * High-performance, high-quality asset loader and cache manager.
+ * Prioritizes high-resolution asset files, ensures bilinear/bicubic scaling,
+ * aspect-ratio cover rendering, and seamless fallbacks.
+ */
 public class AssetManager {
 
     private static final Map<String, BufferedImage> imageCache = new HashMap<>();
@@ -20,36 +25,52 @@ public class AssetManager {
     }
 
     private static void loadAssets() {
-        referenceSheet = loadImageFromFileOrResource("reference_sheet.png");
+        // High-resolution dedicated assets
         loadImageFromFileOrResource("menu_desk.jpg");
         loadImageFromFileOrResource("detective_portrait.jpg");
         loadImageFromFileOrResource("suspect_arjun.jpg");
+        loadImageFromFileOrResource("suspect_meera.png");
+        loadImageFromFileOrResource("suspect_rohan.png");
+        loadImageFromFileOrResource("case_diamond.png");
+        loadImageFromFileOrResource("case_library.png");
+        loadImageFromFileOrResource("case_poison.png");
+        loadImageFromFileOrResource("case_prototype.png");
+        loadImageFromFileOrResource("evidence_wineglass.png");
 
+        referenceSheet = loadImageFromFileOrResource("reference_sheet.png");
         if (referenceSheet != null) {
             extractReferenceSubimages();
         }
     }
 
     private static BufferedImage loadImageFromFileOrResource(String filename) {
+        if (filename == null) return null;
         try {
-            File f = new File("src/main/resources/assets/" + filename);
-            if (!f.exists()) {
-                f = new File("assets/" + filename);
-            }
-            if (f.exists()) {
-                BufferedImage img = ImageIO.read(f);
-                if (img != null) {
-                    imageCache.put(filename, img);
-                    return img;
-                }
-            }
-
+            // Check direct resource path
             InputStream is = AssetManager.class.getResourceAsStream("/assets/" + filename);
             if (is != null) {
                 BufferedImage img = ImageIO.read(is);
                 if (img != null) {
                     imageCache.put(filename, img);
                     return img;
+                }
+            }
+
+            // Check file system paths
+            String[] searchPaths = {
+                    "src/main/resources/assets/" + filename,
+                    "target/classes/assets/" + filename,
+                    "assets/" + filename
+            };
+
+            for (String p : searchPaths) {
+                File f = new File(p);
+                if (f.exists()) {
+                    BufferedImage img = ImageIO.read(f);
+                    if (img != null) {
+                        imageCache.put(filename, img);
+                        return img;
+                    }
                 }
             }
         } catch (Exception e) {
@@ -59,27 +80,29 @@ public class AssetManager {
     }
 
     private static void extractReferenceSubimages() {
+        if (referenceSheet == null) return;
         try {
             int rw = referenceSheet.getWidth();
             int rh = referenceSheet.getHeight();
             float sx = rw / 1024.0f;
             float sy = rh / 572.0f;
 
-            cropAndCache("suspect_meera.png", (int)(116 * sx), (int)(230 * sy), (int)(48 * sx), (int)(48 * sy));
-            cropAndCache("suspect_rohan.png", (int)(190 * sx), (int)(238 * sy), (int)(48 * sx), (int)(48 * sy));
-            cropAndCache("case_diamond.png", (int)(534 * sx), (int)(62 * sy), (int)(72 * sx), (int)(32 * sy));
-            cropAndCache("case_library.png", (int)(630 * sx), (int)(62 * sy), (int)(72 * sx), (int)(32 * sy));
-            cropAndCache("case_poison.png", (int)(534 * sx), (int)(105 * sy), (int)(72 * sx), (int)(32 * sy));
-            cropAndCache("case_prototype.png", (int)(630 * sx), (int)(105 * sy), (int)(72 * sx), (int)(32 * sy));
-            cropAndCache("evidence_wineglass.png", (int)(360 * sx), (int)(232 * sy), (int)(122 * sx), (int)(56 * sy));
-            cropAndCache("desk_corkboard.png", 0, 0, (int)(240 * sx), (int)(180 * sy));
+            // Only crop if dedicated high-res asset is not already cached
+            cropAndCacheIfMissing("suspect_meera.png", (int)(116 * sx), (int)(230 * sy), (int)(48 * sx), (int)(48 * sy));
+            cropAndCacheIfMissing("suspect_rohan.png", (int)(190 * sx), (int)(238 * sy), (int)(48 * sx), (int)(48 * sy));
+            cropAndCacheIfMissing("case_diamond.png", (int)(534 * sx), (int)(62 * sy), (int)(72 * sx), (int)(32 * sy));
+            cropAndCacheIfMissing("case_library.png", (int)(630 * sx), (int)(62 * sy), (int)(72 * sx), (int)(32 * sy));
+            cropAndCacheIfMissing("case_poison.png", (int)(534 * sx), (int)(105 * sy), (int)(72 * sx), (int)(32 * sy));
+            cropAndCacheIfMissing("case_prototype.png", (int)(630 * sx), (int)(105 * sy), (int)(72 * sx), (int)(32 * sy));
+            cropAndCacheIfMissing("evidence_wineglass.png", (int)(360 * sx), (int)(232 * sy), (int)(122 * sx), (int)(56 * sy));
+            cropAndCacheIfMissing("desk_corkboard.png", 0, 0, (int)(240 * sx), (int)(180 * sy));
         } catch (Exception e) {
             System.err.println("Could not extract subimages: " + e.getMessage());
         }
     }
 
-    private static void cropAndCache(String key, int x, int y, int w, int h) {
-        if (referenceSheet == null) return;
+    private static void cropAndCacheIfMissing(String key, int x, int y, int w, int h) {
+        if (referenceSheet == null || imageCache.containsKey(key)) return;
         try {
             x = Math.max(0, Math.min(x, referenceSheet.getWidth() - 1));
             y = Math.max(0, Math.min(y, referenceSheet.getHeight() - 1));
@@ -89,7 +112,7 @@ public class AssetManager {
             BufferedImage cropped = referenceSheet.getSubimage(x, y, w, h);
             BufferedImage scaled = new BufferedImage(w * 2, h * 2, BufferedImage.TYPE_INT_ARGB);
             Graphics2D g2 = scaled.createGraphics();
-            g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+            Theme.applyQualityHints(g2);
             g2.drawImage(cropped, 0, 0, w * 2, h * 2, null);
             g2.dispose();
 
@@ -98,6 +121,7 @@ public class AssetManager {
     }
 
     public static BufferedImage getImage(String name) {
+        if (name == null) return null;
         BufferedImage img = imageCache.get(name);
         if (img != null) return img;
 
@@ -107,6 +131,9 @@ public class AssetManager {
         return generateFallbackImage(name);
     }
 
+    /**
+     * Renders a circular image with cover aspect-ratio scaling, crisp antialiasing, and optional border.
+     */
     public static BufferedImage getCircularImage(BufferedImage source, int size, Color borderColor, int borderWidth) {
         BufferedImage output = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB);
         Graphics2D g2 = output.createGraphics();
@@ -116,7 +143,16 @@ public class AssetManager {
         g2.setClip(circle);
 
         if (source != null) {
-            g2.drawImage(source, borderWidth, borderWidth, size - borderWidth * 2, size - borderWidth * 2, null);
+            int sw = source.getWidth();
+            int sh = source.getHeight();
+            int targetDim = size - borderWidth * 2;
+            double scale = Math.max((double) targetDim / sw, (double) targetDim / sh);
+            int dw = (int) Math.round(sw * scale);
+            int dh = (int) Math.round(sh * scale);
+            int dx = borderWidth + (targetDim - dw) / 2;
+            int dy = borderWidth + (targetDim - dh) / 2;
+
+            g2.drawImage(source, dx, dy, dw, dh, null);
         } else {
             g2.setColor(Theme.CARD_BG_SOLID);
             g2.fill(circle);
@@ -133,6 +169,9 @@ public class AssetManager {
         return output;
     }
 
+    /**
+     * Renders a rounded rectangular image with aspect-ratio cover scaling and border.
+     */
     public static BufferedImage getRoundedImage(BufferedImage source, int width, int height, int arc, Color borderColor) {
         BufferedImage output = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
         Graphics2D g2 = output.createGraphics();
@@ -142,7 +181,15 @@ public class AssetManager {
         g2.setClip(round);
 
         if (source != null) {
-            g2.drawImage(source, 0, 0, width, height, null);
+            int sw = source.getWidth();
+            int sh = source.getHeight();
+            double scale = Math.max((double) width / sw, (double) height / sh);
+            int dw = (int) Math.round(sw * scale);
+            int dh = (int) Math.round(sh * scale);
+            int dx = (width - dw) / 2;
+            int dy = (height - dh) / 2;
+
+            g2.drawImage(source, dx, dy, dw, dh, null);
         } else {
             g2.setColor(Theme.CARD_BG);
             g2.fill(round);
@@ -160,7 +207,7 @@ public class AssetManager {
     }
 
     private static BufferedImage generateFallbackImage(String name) {
-        int w = 200, h = 150;
+        int w = 360, h = 180;
         BufferedImage img = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
         Graphics2D g2 = img.createGraphics();
         Theme.applyQualityHints(g2);

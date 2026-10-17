@@ -1,7 +1,13 @@
 package com.mysteryvault;
 
 /**
- * Entry point forwarding to the authoritative single main class MysteryVaultApplication.
+ * Mystery Vault Compatibility Launcher.
+ *
+ * Provides backwards compatibility for IDEs, scripts, or legacy configurations
+ * that expect "com.mysteryvault.Main" as the main class.
+ *
+ * This class simply delegates immediately to the authoritative production
+ * entry point and composition root: {@link com.mysteryvault.MysteryVaultApplication}.
  */
 public class Main {
 

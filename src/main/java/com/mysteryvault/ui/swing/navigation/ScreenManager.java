@@ -64,6 +64,12 @@ public class ScreenManager {
         currentScreen = screenName;
         cardLayout.show(container, screenName);
 
+        for (Component comp : container.getComponents()) {
+            if (comp.isVisible() && comp instanceof com.mysteryvault.ui.swing.screens.ResultPanel) {
+                ((com.mysteryvault.ui.swing.screens.ResultPanel) comp).refreshFromLastResult();
+            }
+        }
+
         if (screenSelector != null && !screenName.equals(screenSelector.getSelectedItem())) {
             screenSelector.setSelectedItem(screenName);
         }

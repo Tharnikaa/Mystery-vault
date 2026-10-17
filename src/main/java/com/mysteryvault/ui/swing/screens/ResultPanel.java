@@ -12,8 +12,18 @@ import com.mysteryvault.ui.swing.viewmodel.ReportViewModel;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
+import java.awt.event.HierarchyEvent;
 import java.awt.geom.RoundRectangle2D;
 
+/**
+ * Module 13 / Screen 12 — Case Result Screen.
+ *
+ * Owned by Member 4.
+ * Displays evaluation verdict, investigation score, rank, and investigation statistics.
+ * Refreshes dynamically whenever displayed from the latest DeductionResult.
+ */
 public class ResultPanel extends JPanel {
 
     private final DeductionViewPort deductionPort;
@@ -23,6 +33,7 @@ public class ResultPanel extends JPanel {
     private JLabel caseNameLbl;
     private JLabel rankBanner;
     private JPanel scorePill;
+    private JPanel trophyPanel;
     private JLabel lblEvidence;
     private JLabel lblContradictions;
     private JLabel lblClues;
@@ -37,6 +48,20 @@ public class ResultPanel extends JPanel {
         setLayout(new BorderLayout());
 
         initUI();
+
+        // Register automatic refresh whenever the screen is displayed or becomes showing in CardLayout
+        addComponentListener(new ComponentAdapter() {
+            @Override
+            public void componentShown(ComponentEvent e) {
+                refreshFromLastResult();
+            }
+        });
+
+        addHierarchyListener(e -> {
+            if ((e.getChangeFlags() & HierarchyEvent.SHOWING_CHANGED) != 0 && isShowing()) {
+                refreshFromLastResult();
+            }
+        });
     }
 
     public ResultPanel() {
@@ -55,7 +80,7 @@ public class ResultPanel extends JPanel {
         victoryCard.setPreferredSize(new Dimension(680, 520));
         victoryCard.setBorder(BorderFactory.createEmptyBorder(24, 36, 24, 36));
 
-        JPanel trophyPanel = new JPanel() {
+        trophyPanel = new JPanel() {
             @Override
             public Dimension getPreferredSize() {
                 return new Dimension(60, 48);
@@ -75,7 +100,10 @@ public class ResultPanel extends JPanel {
                 int cx = getWidth() / 2;
                 int cy = getHeight() / 2;
 
-                g2.setColor(Theme.GOLD_PRIMARY);
+                DeductionResult r = deductionPort.getLastResult();
+                boolean isSolved = (r != null && r.isSolved());
+
+                g2.setColor(isSolved ? Theme.GOLD_PRIMARY : Theme.RED_CONFLICT);
                 g2.fillArc(cx - 16, cy - 18, 32, 26, 0, -180);
                 g2.fillRect(cx - 16, cy - 18, 32, 10);
                 g2.setStroke(new BasicStroke(2.2f));
@@ -122,16 +150,20 @@ public class ResultPanel extends JPanel {
                 int w = getWidth();
                 int h = getHeight();
                 RoundRectangle2D round = new RoundRectangle2D.Float(1, 1, w - 2, h - 2, 8, 8);
-                g2.setColor(new Color(212, 163, 89, 30));
+
+                DeductionResult r = deductionPort.getLastResult();
+                boolean isSolved = (r != null && r.isSolved());
+
+                g2.setColor(isSolved ? new Color(212, 163, 89, 30) : new Color(235, 87, 87, 30));
                 g2.fill(round);
-                g2.setColor(Theme.BORDER_GOLD);
+                g2.setColor(isSolved ? Theme.BORDER_GOLD : Theme.RED_CONFLICT);
                 g2.setStroke(new BasicStroke(1.2f));
                 g2.draw(round);
 
                 g2.setFont(Theme.bold(13));
-                g2.setColor(Theme.TEXT_GOLD);
-                DeductionResult r = deductionPort.getLastResult();
-                String text = "Investigation Score: " + (r != null ? r.getScore() : 92) + " / 100";
+                g2.setColor(isSolved ? Theme.TEXT_GOLD : Theme.RED_CONFLICT);
+                int scoreVal = (r != null ? r.getScore() : 92);
+                String text = "Investigation Score: " + scoreVal + " / 100";
                 FontMetrics fm = g2.getFontMetrics();
                 g2.drawString(text, (w - fm.stringWidth(text)) / 2, (h - fm.getHeight()) / 2 + fm.getAscent());
 
@@ -169,7 +201,7 @@ public class ResultPanel extends JPanel {
 
         rankBanner = new JLabel(res != null ? ("✦ " + res.getRankTitle() + " ✦") : "✦ MASTER DETECTIVE ✦");
         rankBanner.setFont(Theme.titleFont(16));
-        rankBanner.setForeground(Theme.TEXT_GOLD);
+        rankBanner.setForeground(res != null && res.isSolved() ? Theme.TEXT_GOLD : Theme.TEXT_MUTED);
         rankBanner.setAlignmentX(Component.CENTER_ALIGNMENT);
 
         JPanel buttonRow = new JPanel(new FlowLayout(FlowLayout.CENTER, 14, 0));
@@ -182,7 +214,9 @@ public class ResultPanel extends JPanel {
 
         CustomButton btnReport = new CustomButton("CASE REPORT", CustomButton.ButtonStyle.DARK);
         btnReport.addActionListener(e -> {
-            ReportViewModel report = reportPort.generateReport("CASE_103");
+            DeductionResult current = deductionPort.getLastResult();
+            String caseId = (current != null && current.getCaseTitle() != null) ? "CASE_103" : "CASE_103";
+            ReportViewModel report = reportPort.generateReport(caseId);
             JTextArea area = new JTextArea(report.getOfficialSummary());
             area.setFont(new Font("Consolas", Font.PLAIN, 12));
             area.setEditable(false);
@@ -230,6 +264,45 @@ public class ResultPanel extends JPanel {
         add(centerWrapper, BorderLayout.CENTER);
     }
 
+    /**
+     * Refreshes all UI fields, statistics, score pill, and verdict labels from deductionPort.getLastResult().
+     */
+    public void refreshFromLastResult() {
+        DeductionResult res = deductionPort.getLastResult();
+        if (res != null) {
+            solvedLbl.setText(res.getVerdictTitle());
+            solvedLbl.setForeground(res.isSolved() ? Theme.TEAL_ACCENT : Theme.RED_CONFLICT);
+            caseNameLbl.setText(res.getCaseTitle());
+            lblEvidence.setText(res.getEvidenceFoundCount() + " / " + res.getTotalEvidenceCount());
+            lblContradictions.setText(res.getContradictionsFound() + " / " + res.getTotalContradictions());
+            lblClues.setText(res.getImportantCluesCount() + " / " + res.getTotalCluesCount());
+            lblWrong.setText(String.valueOf(res.getWrongAccusations()));
+            lblWrong.setForeground(res.getWrongAccusations() > 0 ? Theme.RED_CONFLICT : Theme.GOLD_PRIMARY);
+            rankBanner.setText("✦ " + res.getRankTitle() + " ✦");
+            rankBanner.setForeground(res.isSolved() ? Theme.TEXT_GOLD : Theme.TEXT_MUTED);
+        } else {
+            solvedLbl.setText("CASE UNRESOLVED");
+            solvedLbl.setForeground(Theme.RED_CONFLICT);
+            caseNameLbl.setText("THE POISONED DRINK");
+            lblEvidence.setText("0 / 8");
+            lblContradictions.setText("0 / 3");
+            lblClues.setText("0 / 6");
+            lblWrong.setText("0");
+            lblWrong.setForeground(Theme.GOLD_PRIMARY);
+            rankBanner.setText("✦ UNRANKED ✦");
+            rankBanner.setForeground(Theme.TEXT_MUTED);
+        }
+
+        if (trophyPanel != null) {
+            trophyPanel.repaint();
+        }
+        if (scorePill != null) {
+            scorePill.repaint();
+        }
+        repaint();
+        revalidate();
+    }
+
     private JPanel createStatLine(String label, JLabel valLbl) {
         JPanel p = new JPanel(new BorderLayout());
         p.setOpaque(false);
@@ -241,5 +314,48 @@ public class ResultPanel extends JPanel {
         p.add(lbl, BorderLayout.WEST);
         p.add(valLbl, BorderLayout.EAST);
         return p;
+    }
+
+    // Testing and verification accessors
+    public String getVerdictText() {
+        return solvedLbl != null ? solvedLbl.getText() : "";
+    }
+
+    public Color getVerdictColor() {
+        return solvedLbl != null ? solvedLbl.getForeground() : null;
+    }
+
+    public String getCaseTitleText() {
+        return caseNameLbl != null ? caseNameLbl.getText() : "";
+    }
+
+    public String getEvidenceStatText() {
+        return lblEvidence != null ? lblEvidence.getText() : "";
+    }
+
+    public String getContradictionsStatText() {
+        return lblContradictions != null ? lblContradictions.getText() : "";
+    }
+
+    public String getCluesStatText() {
+        return lblClues != null ? lblClues.getText() : "";
+    }
+
+    public String getWrongAccusationsText() {
+        return lblWrong != null ? lblWrong.getText() : "";
+    }
+
+    public String getRankBannerText() {
+        return rankBanner != null ? rankBanner.getText() : "";
+    }
+
+    public boolean isCaseSolved() {
+        DeductionResult res = deductionPort.getLastResult();
+        return res != null && res.isSolved();
+    }
+
+    public int getScore() {
+        DeductionResult res = deductionPort.getLastResult();
+        return res != null ? res.getScore() : 0;
     }
 }
