@@ -1,4 +1,4 @@
-# Comprehensive build, test, and demo script for Member 1
+# Comprehensive build, test, and demo script for Member 3
 $ErrorActionPreference = "Stop"
 
 $workspaceRoot = $PSScriptRoot
@@ -9,7 +9,7 @@ New-Item -ItemType Directory -Force -Path $classesDir | Out-Null
 New-Item -ItemType Directory -Force -Path $testClassesDir | Out-Null
 
 Write-Host "=========================================================="
-Write-Host " [1/4] Compiling src/main/java (Member 1 Modules 1, 2, 3)..."
+Write-Host " [1/4] Compiling src/main/java (Member 1 & Member 3 Modules)..."
 Write-Host "=========================================================="
 $mainFiles = Get-ChildItem -Path (Join-Path $workspaceRoot "src\main\java") -Recurse -Filter "*.java" | ForEach-Object { $_.FullName }
 & javac -encoding UTF-8 -d $classesDir $mainFiles
@@ -32,16 +32,16 @@ if ($LASTEXITCODE -ne 0) { throw "Compilation of test sources failed" }
 Write-Host "Test sources compiled successfully."
 
 Write-Host "`n=========================================================="
-Write-Host " [3/4] Running Automated Tests..."
+Write-Host " [3/4] Running Automated Tests (Member 1 + Member 3)..."
 Write-Host "=========================================================="
 $runtimeClasspath = "$classesDir;$testClassesDir;$junitApi;$junitCommons;$opentest;$apiguardian"
-& java -cp $runtimeClasspath com.mysteryvault.Member1TestSuite
+& java -cp $runtimeClasspath com.mysteryvault.Member3TestSuite
 if ($LASTEXITCODE -ne 0) { throw "Automated test suite failed" }
 
 Write-Host "`n=========================================================="
-Write-Host " [4/4] Running Member 1 Interactive Verification Demo..."
+Write-Host " [4/4] Running Member 3 End-to-End Verification Demo..."
 Write-Host "=========================================================="
-& java -cp $classesDir com.mysteryvault.Member1VerificationDemo
+& java -cp $classesDir com.mysteryvault.Member3VerificationDemo
 if ($LASTEXITCODE -ne 0) { throw "Verification demo failed" }
 
 Write-Host "`nAll build, test, and verification steps succeeded!"
