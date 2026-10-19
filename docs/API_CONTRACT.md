@@ -1,174 +1,96 @@
-# Mystery Vault — API Contract Specification
+# Mystery Vault — Approved Production API Contract
 
-**Status:** PROVISIONAL DRAFT (Pending Formal Team Review & Sign-Off)  
-**Target Platform:** Java 17+ | Single Desktop Process  
-**Prefix:** `com.mysteryvault`
-
----
-
-## 1. Shared Identifiers & General Rules
-
-1. **Entity Identifiers:**
-   - All IDs across modules must be immutable `String` values (e.g. `"CASE_103"`, `"SUSPECT_MEERA"`, `"E01"`, `"T1"`, `"C1"`).
-   - IDs must **never** be UI component references or database-specific auto-increment integers.
-2. **Date & Time:**
-   - All temporal values across module boundaries must use `java.time.LocalDateTime` or `java.time.LocalTime`.
-3. **Decoupling:**
-   - Backend modules (`model`, `service`, `analyzer`, `repository`, `util`) must **never** import `com.mysteryvault.ui.*` or `javax.swing.*`.
-   - Core domain models must be pure serializable DTOs without embedded database queries or UI logic.
+**Status:** APPROVED & FULLY INTEGRATED  
+**Language / Platform:** Java 17+ | Single Maven Desktop Application  
+**Package Prefix:** `com.mysteryvault`
 
 ---
 
-## 2. Implemented Member 4 API Contracts
+## 1. Module Ownership Matrix
 
-### Module 4 — Connection Graph
-```java
-package com.mysteryvault.model;
-
-public class Connection implements Serializable {
-    public Connection(String id, String sourceId, String targetId, String relationType, boolean strongLead);
-    public String getId();
-    public String getSourceId();
-    public String getTargetId();
-    public String getRelationType();
-    public boolean isStrongLead();
-}
-```
-
-```java
-package com.mysteryvault.ui.swing.components;
-
-public class CustomGraphCanvas extends JComponent {
-    public void setGraph(List<GraphNode> nodes, List<Connection> connections);
-    public void setNodeSelectionListener(Consumer<GraphNode> listener);
-    public void setSelectedNode(GraphNode node);
-    public GraphNode getSelectedNode();
-}
-```
-
-### Module 11 — Final Deduction / Solver Engine
-```java
-package com.mysteryvault.service;
-
-public class CaseSolverEngine {
-    public DeductionResult evaluate(DeductionRequest request, CaseContext caseContext);
-    public void registerCaseRule(CaseSolutionRule rule);
-}
-```
-
-```java
-package com.mysteryvault.service.dto;
-
-public class DeductionRequest implements Serializable {
-    public DeductionRequest(String caseId, String accusedSuspectId, String motive, Set<String> supportingEvidenceIds, String reasoning);
-    public String getCaseId();
-    public String getAccusedSuspectId();
-    public String getMotive();
-    public Set<String> getSupportingEvidenceIds();
-    public String getReasoning();
-}
-
-public class DeductionResult implements Serializable {
-    public boolean isSolved();
-    public int getScore();
-    public String getVerdictTitle();
-    public String getCaseTitle();
-    public String getExplanation();
-    public String getRecommendedCaseStatus();
-    public int getEvidenceFoundCount();
-    public int getTotalEvidenceCount();
-    public int getImportantCluesCount();
-    public int getTotalCluesCount();
-    public int getContradictionsFound();
-    public int getTotalContradictions();
-    public int getWrongAccusations();
-    public String getRankTitle();
-}
-
-public class CaseContext implements Serializable {
-    public CaseContext(String caseId, String caseTitle, Set<String> discoveredEvidenceIds, Set<String> discoveredClueIds, Set<String> uncoveredContradictionIds);
-    public String getCaseId();
-    public String getCaseTitle();
-    public Set<String> getDiscoveredEvidenceIds();
-    public Set<String> getDiscoveredClueIds();
-    public Set<String> getUncoveredContradictionIds();
-}
-```
+| Module | Name | Owner | Canonical Packages / Classes |
+| :--- | :--- | :--- | :--- |
+| **Module 1** | Case Management | Member 1 | `model.Case`, `enums.CaseStatus`, `model.Priority`, `repository.GenericRepository`, `repository.impl.CaseMemoryRepository`, `service.CaseService` |
+| **Module 2** | Suspect & Person | Member 1 | `model.Person`, `model.Suspect`, `service.SampleDataFactory` |
+| **Module 3** | Evidence & Clues | Member 1 | `model.InvestigationAsset`, `model.Evidence`, `model.DigitalEvidence`, `model.DocumentEvidence`, `model.Clue`, `service.ClueUnlockEngine`, `exception.ClueLockedException` |
+| **Module 4** | Connection Graph | Member 4 | `model.Connection`, `ui.swing.components.CustomGraphCanvas`, `ui.swing.viewmodel.GraphNode` |
+| **Module 5** | Timeline & Chronology | Member 2 | `model.TimelineEvent`, `util.DateTimeUtils`, `analyzer.TimelineAnalyzerTask`, `analyzer.TimelineAnalysisResult` |
+| **Module 6** | Statements & Regex | Member 2 | `model.Statement`, `model.ExtractedEntity`, `model.ExtractedStatementData`, `service.StatementRegexExtractor`, `util.RegexUtils` |
+| **Module 7** | Contradiction Detection | Member 2 | `model.Contradiction`, `enums.Severity`, `exception.ContradictionException`, `service.ContradictionDetectorService` |
+| **Module 8** | Concurrent Analysis | Member 3 | `analyzer.Analyzer`, `analyzer.AnalysisContext`, `analyzer.AnalysisResult`, `analyzer.ConcurrentAnalysisManager`, `analyzer.EvidenceAnalyzerTask`, `analyzer.StatementAnalyzerTask` |
+| **Module 9** | Notes & Storage | Member 3 | `model.InvestigationNote`, `service.FileStorageService`, `util.SerializerUtils` |
+| **Module 10** | Reports | Member 3 | `model.InvestigationReport`, `service.ReportGeneratorService` |
+| **Module 11** | Final Deduction / Solver | Member 4 | `service.CaseSolverEngine`, `service.dto.CaseContext`, `service.dto.DeductionRequest`, `service.dto.DeductionResult` |
+| **Module 12** | Diagnostics / JDBC Stub | Member 3 | `repository.impl.CaseJdbcRepositoryStub`, `repository.impl.EvidenceArchiveDao`, `web.MysteryVaultWebServer` |
+| **Module 13** | App Shell & 12 Screens | Member 4 | `MysteryVaultApplication` (Main), `ui.swing.MainFrame`, `ui.swing.screens.*` (all 12 screens), `ui.swing.adapters.*`, `ui.swing.ports.*` |
 
 ---
 
-## 3. Proposed Backend Contracts (From Master Prompt)
+## 2. Actual Public Service Signatures
 
-### Member 1: Case Management & Evidence (Modules 1, 2, 3)
+### Member 1: Core Domain Services
 ```java
-package com.mysteryvault.service;
+// com.mysteryvault.service.CaseService
+public List<Case> listCases();
+public Optional<Case> findById(String caseId);
+public Case getCaseOrThrow(String caseId);
+public Case createCase(Case draft);
+public Case updateCase(Case updated);
+public Case transitionCaseStatus(String caseId, CaseStatus newStatus);
+public Case loadSampleCase103();
 
-public class CaseService {
-    public List<Case> listCases();
-    public Optional<Case> findById(String caseId);
-    public Case createCase(Case draft);
-    public Case updateCase(Case updated);
-}
-
-public class ClueUnlockEngine {
-    public boolean canUnlock(Clue clue, Set<String> discoveredEvidenceIds);
-    public void unlock(Clue clue, Set<String> discoveredEvidenceIds) throws ClueLockedException;
-}
+// com.mysteryvault.service.ClueUnlockEngine
+public boolean canUnlock(Clue clue, Set<String> discoveredEvidenceIds);
+public void unlock(Clue clue, Set<String> discoveredEvidenceIds) throws ClueLockedException;
 ```
 
-### Member 2: Timeline & Statement Analysis (Modules 5, 6, 7)
+### Member 2: Analysis & Extraction Services
 ```java
-package com.mysteryvault.service;
+// com.mysteryvault.service.StatementRegexExtractor
+public ExtractedStatementData extract(Statement statement);
+public List<ExtractedEntity<LocalTime>> extractTimes(String text);
+public List<ExtractedEntity<LocalDate>> extractDates(String text);
+public List<ExtractedEntity<String>> extractReferenceIds(String text);
+public List<ExtractedEntity<String>> extractLocations(String text);
 
-public class StatementRegexExtractor {
-    public List<String> extractTimes(String statementText);
-    public List<String> extractDates(String statementText);
-    public List<String> extractReferences(String statementText);
-}
+// com.mysteryvault.service.ContradictionDetectorService
+public List<Contradiction> detectContradictions(String caseId, List<Statement> statements, List<TimelineEvent> timelineEvents);
+
+// com.mysteryvault.analyzer.TimelineAnalyzerTask implements Analyzer
+public TimelineAnalysisResult execute();
+public AnalysisResult analyze(AnalysisContext context) throws Exception;
 ```
 
-### Member 3: Concurrent Analysis & Reports (Modules 8, 9, 10, 12)
+### Member 3: Concurrency, Storage, & Reports
 ```java
-package com.mysteryvault.analyzer;
+// com.mysteryvault.analyzer.ConcurrentAnalysisManager
+public List<AnalysisResult> runAnalysisConcurrently(List<Analyzer> analyzers, AnalysisContext context, long timeoutSeconds);
+public void shutdown();
 
-public interface Analyzer {
-    AnalysisResult analyze(AnalysisContext context);
-}
+// com.mysteryvault.service.FileStorageService
+public Path saveTextNote(InvestigationNote note) throws IOException;
+public Path saveReportText(String caseId, String reportId, String formattedReportText) throws IOException;
+public String readTextFile(Path filePath) throws IOException;
 
-public class ConcurrentAnalysisManager {
-    public AnalysisResult runAllAnalyzers(AnalysisContext context);
-}
+// com.mysteryvault.service.ReportGeneratorService
+public InvestigationReport generateReport(Case caseEntity, List<Suspect> suspects, List<Evidence> evidenceList, List<Clue> clues, List<String> contradictions, String deductionConclusion, int confidenceScore);
 ```
 
+### Member 4: Graph, Deduction Solver, & UI Ports
 ```java
-package com.mysteryvault.service;
+// com.mysteryvault.service.CaseSolverEngine
+public DeductionResult evaluate(DeductionRequest request, CaseContext caseContext);
+public void registerCaseRule(CaseSolutionRule rule);
 
-public class ReportGeneratorService {
-    public InvestigationReport generateReport(String caseId);
-}
-
-public class FileStorageService {
-    public void saveGame(String saveSlot, Object gameState) throws IOException;
-    public Object loadGame(String saveSlot) throws IOException, ClassNotFoundException;
-}
+// com.mysteryvault.ui.swing.ports
+public interface CaseViewPort { List<CaseCardViewModel> getAvailableCases(); CaseCardViewModel getActiveCase(); void selectCase(String caseId); }
+public interface SuspectViewPort { List<SuspectViewModel> getSuspectsForCase(String caseId); SuspectViewModel getSuspectById(String suspectId); }
+public interface EvidenceViewPort { List<EvidenceViewModel> getEvidenceForCase(String caseId); EvidenceViewModel getEvidenceById(String evidenceId); String examineEvidence(String evidenceId); String sendToLab(String evidenceId); }
+public interface TimelineViewPort { List<TimelineEventViewModel> getTimelineForCase(String caseId); void addEvent(String caseId, String time, String description); }
+public interface InterrogationViewPort { List<ChatMessageViewModel> getDialogueHistory(String suspectId); ChatMessageViewModel askQuestion(String suspectId, String question); ChatMessageViewModel showEvidence(String suspectId, String evidenceId); ChatMessageViewModel challengeStatement(String suspectId, String contradictionId); }
+public interface ConnectionViewPort { List<GraphNode> getGraphNodes(String caseId); List<Connection> getConnections(String caseId); List<String> getDiscoveredConnectionSummaries(String caseId); }
+public interface AnalysisViewPort { AnalysisViewModel getAnalysisResults(String caseId); }
+public interface DeductionViewPort { DeductionResult submitDeduction(DeductionRequest request); DeductionResult getLastResult(); }
+public interface ReportViewPort { ReportViewModel generateReport(String caseId); }
+public interface ProfileViewPort { ProfileViewModel getPlayerProfile(); }
 ```
-
----
-
-## 4. Pending Team Approval (Action Items for Integration Meeting)
-
-> [!IMPORTANT]
-> The following items represent provisional specifications that must be confirmed by all four members before production merging.
-
-1. **Player Profile & XP Contract (Screen 2):**
-   - **Current Status:** Implemented in frontend via `ProfileViewPort` / `MockProfileViewPort`.
-   - **Open Question:** Who persists player XP, rank, and career accuracy? Member 1 or Member 3?
-2. **TimelineAnalyzerTask & Analyzer Adapter (Modules 5 & 8):**
-   - **Current Status:** Member 2 owns `TimelineAnalyzerTask` while Member 3 owns `Analyzer` interface.
-   - **Open Question:** Confirm exact parameter and return type of `analyze(AnalysisContext)` so Member 2 and Member 3 compile without mismatch.
-3. **Dialogue / Interrogation Scripting Provider (Module 6 & Screen 7):**
-   - **Current Status:** Member 2 extracts dates/times from statements, while Member 4's `MockInterrogationViewPort` supplies conversational dialogue.
-   - **Open Question:** How will conversational branching trees or questions be loaded from disk?
-4. **Case Status Transition on Solver Completion (Modules 1 & 11):**
-   - **Current Status:** `CaseSolverEngine` calculates `isSolved()` and recommends `"SOLVED"`.
-   - **Open Question:** Does `CaseSolverEngine` return the recommendation to the UI, which calls `CaseService.updateCase(case)`, or will `CaseService` provide a dedicated method `solveCase(caseId, deductionResult)`?

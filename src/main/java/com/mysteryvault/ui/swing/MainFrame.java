@@ -107,7 +107,7 @@ public class MainFrame extends JFrame {
         screenContainer.add(new TimelinePanel(this.timelinePort), ScreenManager.INVESTIGATION_TIMELINE);
         screenContainer.add(new ConnectionPanel(this.connectionPort), ScreenManager.CASE_CONNECTION_ENGINE);
         screenContainer.add(new AnalysisPanel(this.analysisPort), ScreenManager.CASE_ANALYSIS);
-        screenContainer.add(new DeductionPanel(this.deductionPort), ScreenManager.FINAL_DEDUCTION);
+        screenContainer.add(new DeductionPanel(this.deductionPort, this.casePort), ScreenManager.FINAL_DEDUCTION);
         screenContainer.add(new ResultPanel(this.deductionPort, this.reportPort), ScreenManager.CASE_RESULT);
 
         rootPanel.add(screenContainer, BorderLayout.CENTER);

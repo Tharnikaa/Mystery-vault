@@ -64,7 +64,12 @@ public class CaseSelectionPanel extends JPanel {
 
         CustomButton btnStart = new CustomButton("START INVESTIGATION", CustomButton.ButtonStyle.GOLD);
         btnStart.setPreferredSize(new Dimension(240, 42));
-        btnStart.addActionListener(e -> ScreenManager.getInstance().showScreen(ScreenManager.INVESTIGATION_HUB));
+        btnStart.addActionListener(e -> {
+            if (selectedCaseIndex >= 0 && selectedCaseIndex < availableCases.size()) {
+                casePort.selectCase(availableCases.get(selectedCaseIndex).getId());
+            }
+            ScreenManager.getInstance().showScreen(ScreenManager.INVESTIGATION_HUB);
+        });
 
         bottomPanel.add(btnStart);
 
@@ -134,6 +139,10 @@ public class CaseSelectionPanel extends JPanel {
                 selectedCaseIndex = index;
                 for (int i = 0; i < caseCards.size(); i++) {
                     caseCards.get(i).setSelected(i == index);
+                }
+                List<CaseCardViewModel> cases = casePort.getAvailableCases();
+                if (index >= 0 && index < cases.size()) {
+                    casePort.selectCase(cases.get(index).getId());
                 }
             }
         });

@@ -1,16 +1,16 @@
 # Mystery Vault — Uncover the Truth
-**Detective Mystery Desktop Game UI & Team Integration Architecture**
+**Complete Four-Member Integrated Criminal Case Investigation Desktop Game**
 
 ---
 
 ## 🔍 Overview
-**Mystery Vault – Uncover the Truth** is a cinematic desktop mystery detective game built with **Java Swing, AWT, and Java 2D** (Java 17+).
+**Mystery Vault – Uncover the Truth** is a cinematic desktop mystery detective game built with **Java Swing, AWT, and Java 2D** (Java 17+), managed by a single root Maven build.
 
-This repository contains:
-1. **Module 13 (Application Shell / Complete UI):** All 12 game screens faithfully recreated according to the design reference specification.
-2. **Module 4 (Clue Network Graph):** Dedicated Java 2D graph renderer (`CustomGraphCanvas`) and pure data model (`Connection`).
-3. **Module 11 (Final Deduction / Case Solver):** Standalone deduction solver engine (`CaseSolverEngine`) and evaluation DTOs.
-4. **Hexagonal Integration Seams:** Interface-driven presentation ports (`ui.swing.ports.*`) and deterministic mock adapters (`ui.swing.mock.*`) enabling independent frontend operation prior to merging backend modules from Members 1, 2, and 3.
+This repository integrates all 13 modules built by the four-person team:
+1. **Member 1 (Modules 1, 2, 3):** Canonical Case management, Suspect/Person models, polymorphic Evidence (Document & Digital), Clue entity, and prerequisite-based `ClueUnlockEngine`.
+2. **Member 2 (Modules 5, 6, 7):** Chronological timeline processing (`TimelineEvent`, `DateTimeUtils`), statement regex extraction (`StatementRegexExtractor`), and contradiction conflict detection (`ContradictionDetectorService`).
+3. **Member 3 (Modules 8, 9, 10, 12):** Multi-threaded concurrent analysis manager (`ConcurrentAnalysisManager`), UTF-8 file storage and serialization (`FileStorageService`), official dossier generation (`ReportGeneratorService`), and JDBC repository stub (`CaseJdbcRepositoryStub`).
+4. **Member 4 (Modules 4, 11, 13):** Clue network Java2D graph visualization (`CustomGraphCanvas`), deduction solver engine (`CaseSolverEngine`), application shell, and all 12 Swing screens.
 
 ---
 
@@ -30,51 +30,69 @@ This repository contains:
 
 ## 🖥️ The 12 Screen Panels
 
-| # | Screen Name | Panel Class | Associated Port |
-|---|---|---|---|
-| **1** | **Main Menu** | `MainMenuPanel` | *Shell / Save-Load* |
-| **2** | **Detective Profile** | `DetectiveProfilePanel` | `ProfileViewPort` |
-| **3** | **Case Selection** | `CaseSelectionPanel` | `CaseViewPort` |
-| **4** | **Main Investigation Hub** | `InvestigationHubPanel` | `CaseViewPort` |
-| **5** | **Suspect Screen** | `SuspectPanel` | `SuspectViewPort` |
-| **6** | **Evidence Investigation** | `EvidencePanel` | `EvidenceViewPort` |
-| **7** | **Interrogation** | `InterrogationPanel` | `InterrogationViewPort`, `SuspectViewPort` |
-| **8** | **Investigation Timeline** | `TimelinePanel` | `TimelineViewPort` |
-| **9** | **Case Connection Engine** | `ConnectionPanel` | `ConnectionViewPort` |
-| **10** | **Case Analysis** | `AnalysisPanel` | `AnalysisViewPort` |
-| **11** | **Final Deduction** | `DeductionPanel` | `DeductionViewPort` |
-| **12** | **Case Result** | `ResultPanel` | `DeductionViewPort`, `ReportViewPort` |
+| # | Screen Name | Panel Class | Associated Port | Integrated Backend |
+|---|---|---|---|---|
+| **1** | **Main Menu** | `MainMenuPanel` | *Shell Navigation* | `FileStorageService` (Save/Load hooks) |
+| **2** | **Detective Profile** | `DetectiveProfilePanel` | `ProfileViewPort` | Dynamic progression & solved cases |
+| **3** | **Case Selection** | `CaseSelectionPanel` | `CaseViewPort` | `CaseService` (Module 1) |
+| **4** | **Main Investigation Hub** | `InvestigationHubPanel` | `CaseViewPort` | Investigation navigation hub |
+| **5** | **Suspect Screen** | `SuspectPanel` | `SuspectViewPort` | `Suspect` & `SampleDataFactory` (Module 2) |
+| **6** | **Evidence Investigation** | `EvidencePanel` | `EvidenceViewPort` | `Evidence`, `ClueUnlockEngine` (Module 3) |
+| **7** | **Interrogation** | `InterrogationPanel` | `InterrogationViewPort` | `StatementRegexExtractor` & Contradictions (M6 & M7) |
+| **8** | **Investigation Timeline** | `TimelinePanel` | `TimelineViewPort` | `TimelineAnalyzerTask` & `DateTimeUtils` (M5) |
+| **9** | **Case Connection Engine** | `ConnectionPanel` | `ConnectionViewPort` | `CustomGraphCanvas` & `Connection` (M4) |
+| **10** | **Case Analysis** | `AnalysisPanel` | `AnalysisViewPort` | `ConcurrentAnalysisManager` (M8) |
+| **11** | **Final Deduction** | `DeductionPanel` | `DeductionViewPort` | `CaseSolverEngine` (M11) & `CaseService` (M1) |
+| **12** | **Case Result** | `ResultPanel` | `DeductionViewPort`, `ReportViewPort` | Solver Result & `ReportGeneratorService` (M10) |
 
 ---
 
-## 🚀 Running the Application
+## 🚀 Building & Testing
 
-### Option 1: Using PowerShell scripts
+### Run All Unit and Integration Tests
 ```powershell
-# Compile main sources & tests, run unit tests, and package JAR
-.\build.ps1
+mvn clean test
+```
+All 50 unit and integration tests across 11 test suites pass with 0 failures, 0 errors, and 0 skipped.
 
-# Launch the desktop application
-.\run.ps1
+### Package Executable JAR
+```powershell
+mvn clean package
+```
+Generates `target/mystery-vault-1.0.0.jar`.
+
+---
+
+## 🎮 Launching the Application
+
+### Option 1: Running via Maven Exec
+```powershell
+mvn compile exec:java -Dexec.mainClass="com.mysteryvault.MysteryVaultApplication"
 ```
 
-### Option 2: Using the pre-built JAR
+### Option 2: Running the Pre-Built JAR
 ```powershell
 java -jar target/mystery-vault-1.0.0.jar
 ```
 
-### Option 3: Double-click Batch File
-```cmd
-run.bat
+### Option 3: PowerShell Script
+```powershell
+.\run.ps1
+```
+
+### Optional Synthetic Demonstration Mode:
+To launch using synthetic presentation mocks:
+```powershell
+java -jar target/mystery-vault-1.0.0.jar --demo
 ```
 
 ---
 
-## 🎮 Navigation & Evaluation Controls
-- **In-Game Flow:** Buttons guide players logically through the mystery investigation.
+## ⌨️ Navigation & Hotkeys
+- **In-Game Flow:** Navigate between screens seamlessly with interactive buttons.
 - **Back Button (`<`):** Navigates back in history on all sub-screens.
-- **Quick Jump Switcher:** A dropdown bar at the bottom allows instantaneous evaluation of any of the 12 screens.
-- **Keyboard Hotkeys:**
+- **Quick Jump Switcher:** Bottom dropdown selector to test any of the 12 screens directly.
+- **Keyboard Shortcuts:**
   - `1` through `9`: Screens 1 to 9
   - `0`: Screen 10 (Case Analysis)
   - `-`: Screen 11 (Final Deduction)
@@ -83,7 +101,8 @@ run.bat
 
 ---
 
-## 📚 Team Integration Documentation
-- **[FRONTEND_INTEGRATION_GUIDE.md](FRONTEND_INTEGRATION_GUIDE.md):** Detailed guide on connecting Members 1, 2, and 3 services.
-- **[INTEGRATION_NOTES.md](INTEGRATION_NOTES.md):** Implemented modules, public API contracts, and known limitations.
-- **[docs/API_CONTRACT.md](docs/API_CONTRACT.md):** Team API contract comparison and Pending Team Approval items.
+## 📚 Documentation
+- **[`docs/API_CONTRACT.md`](docs/API_CONTRACT.md):** Verified signatures and module ownership mappings.
+- **[`docs/INTEGRATION_DECISIONS.md`](docs/INTEGRATION_DECISIONS.md):** Architectural decisions, duplicate handling, and state machine persistence.
+- **[`FRONTEND_INTEGRATION_GUIDE.md`](FRONTEND_INTEGRATION_GUIDE.md):** Hexagonal ports & adapters integration guide.
+- **[`INTEGRATION_NOTES.md`](INTEGRATION_NOTES.md):** Detailed module audit and integration summary.

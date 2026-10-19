@@ -15,6 +15,7 @@ import java.util.Set;
 public class DeductionPanel extends JPanel {
 
     private final DeductionViewPort deductionPort;
+    private final com.mysteryvault.ui.swing.ports.CaseViewPort casePort;
 
     private JRadioButton rbArjun;
     private JRadioButton rbMeera;
@@ -24,13 +25,18 @@ public class DeductionPanel extends JPanel {
     private JCheckBox cbE03;
     private JCheckBox cbE05;
 
-    public DeductionPanel(DeductionViewPort deductionPort) {
+    public DeductionPanel(DeductionViewPort deductionPort, com.mysteryvault.ui.swing.ports.CaseViewPort casePort) {
         this.deductionPort = deductionPort != null ? deductionPort : new MockDeductionViewPort();
+        this.casePort = casePort;
         setOpaque(true);
         setBackground(Theme.BG_DARK);
         setLayout(new BorderLayout());
 
         initUI();
+    }
+
+    public DeductionPanel(DeductionViewPort deductionPort) {
+        this(deductionPort, null);
     }
 
     public DeductionPanel() {
@@ -151,7 +157,10 @@ public class DeductionPanel extends JPanel {
             if (cbE03.isSelected()) evSet.add("E03");
             if (cbE05.isSelected()) evSet.add("E05");
 
-            DeductionRequest request = new DeductionRequest("CASE_103", accused, motive, evSet, "Deduction submitted by detective.");
+            String activeCaseId = (casePort != null && casePort.getActiveCase() != null)
+                    ? casePort.getActiveCase().getId()
+                    : "CASE_103";
+            DeductionRequest request = new DeductionRequest(activeCaseId, accused, motive, evSet, "Deduction submitted by detective.");
             deductionPort.submitDeduction(request);
 
             ScreenManager.getInstance().showScreen(ScreenManager.CASE_RESULT);
