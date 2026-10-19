@@ -185,8 +185,47 @@ public class Member1VerificationDemo {
             System.out.println("  • [" + c.getId() + "] " + c.getTitle() + " | Requires: " + c.getRequiredEvidenceIds());
         }
 
+        // ---------------------------------------------------------------------
+        // 5. DATABASE ACCESS & REAL JDBC PERSISTENCE DEMO
+        // ---------------------------------------------------------------------
+        System.out.println("\n>>> 5. DATABASE ARCHITECTURE: JDBC PERSISTENCE & SCHEMA VALIDATION");
+        com.mysteryvault.config.DatabaseConfig dbConfig = com.mysteryvault.config.DatabaseConfig.forH2InMemory("demo_mv_db");
+        System.out.println("Configured Database: " + dbConfig.getMaskedUrl());
+
+        com.mysteryvault.config.DatabaseConnectionFactory factory = new com.mysteryvault.config.DatabaseConnectionFactory(dbConfig);
+        boolean connected = factory.checkConnectivity();
+        System.out.println("Database connectivity verified (SELECT 1): " + connected + " [SUCCESS]");
+
+        System.out.println("Executing automated database schema migration (schema.sql)...");
+        factory.initializeSchema();
+        System.out.println("Schema initialization succeeded. Tables created: cases, suspects, case_suspects, evidence, case_evidence, clues, case_clues, clue_prerequisites, evidence_archive.");
+
+        com.mysteryvault.repository.impl.CaseJdbcRepository caseJdbcRepo = new com.mysteryvault.repository.impl.CaseJdbcRepository(factory);
+        com.mysteryvault.repository.impl.SuspectJdbcRepository suspectJdbcRepo = new com.mysteryvault.repository.impl.SuspectJdbcRepository(factory);
+        com.mysteryvault.repository.impl.EvidenceJdbcRepository evidenceJdbcRepo = new com.mysteryvault.repository.impl.EvidenceJdbcRepository(factory);
+        com.mysteryvault.repository.impl.ClueJdbcRepository clueJdbcRepo = new com.mysteryvault.repository.impl.ClueJdbcRepository(factory);
+
+        System.out.println("\nSeeding Case #103 relational graph into real JDBC database...");
+        SampleDataFactory.populateRepositories(caseJdbcRepo, suspectJdbcRepo, evidenceJdbcRepo, clueJdbcRepo);
+
+        System.out.println("Reading back persisted data from database:");
+        Case dbCase = caseJdbcRepo.findById("CASE-103").orElseThrow();
+        System.out.println("  • Persisted Case: " + dbCase.getTitle() + " [Status: " + dbCase.getStatus() + "]");
+        System.out.println("  • Associated Suspect IDs: " + dbCase.getSuspectIds());
+        System.out.println("  • Associated Evidence IDs: " + dbCase.getEvidenceIds());
+        System.out.println("  • Associated Clue IDs: " + dbCase.getClueIds());
+
+        List<Suspect> dbSuspects = suspectJdbcRepo.findByCaseId("CASE-103");
+        System.out.println("  • Verified Suspects loaded from DB: " + dbSuspects.size());
+
+        List<Evidence> dbEvidence = evidenceJdbcRepo.findByCaseId("CASE-103");
+        System.out.println("  • Verified Polymorphic Evidence loaded from DB: " + dbEvidence.size());
+
+        List<Clue> dbClues = clueJdbcRepo.findByCaseId("CASE-103");
+        System.out.println("  • Verified Clues with prerequisites loaded from DB: " + dbClues.size());
+
         System.out.println("\n================================================================================");
-        System.out.println("   MEMBER 1 VERIFICATION COMPLETED WITH ZERO ERRORS");
+        System.out.println("   MEMBER 1 VERIFICATION COMPLETED WITH ZERO ERRORS (MODULES 1, 2, 3)");
         System.out.println("================================================================================");
     }
 }

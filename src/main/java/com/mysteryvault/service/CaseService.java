@@ -45,6 +45,33 @@ public class CaseService {
     }
 
     /**
+     * Factory method for creating CaseService backed by a real database connection factory.
+     */
+    public static CaseService createDatabaseService(com.mysteryvault.config.DatabaseConnectionFactory connectionFactory) {
+        Objects.requireNonNull(connectionFactory, "DatabaseConnectionFactory cannot be null");
+        return new CaseService(new com.mysteryvault.repository.impl.CaseJdbcRepository(connectionFactory));
+    }
+
+    /**
+     * Factory method for production mode reading configuration from environment variables.
+     * Fails fast if database is unreachable; does NOT silently fall back to memory.
+     */
+    public static CaseService createProductionService() {
+        com.mysteryvault.config.DatabaseConfig config = com.mysteryvault.config.DatabaseConfig.fromEnvironment();
+        config.checkConnectivity();
+        com.mysteryvault.config.DatabaseConnectionFactory factory = new com.mysteryvault.config.DatabaseConnectionFactory(config);
+        factory.initializeSchema();
+        return createDatabaseService(factory);
+    }
+
+    /**
+     * Factory method for testing with an in-memory repository.
+     */
+    public static CaseService createInMemoryService() {
+        return new CaseService(new CaseMemoryRepository());
+    }
+
+    /**
      * Returns an unmodifiable list of all active or archived cases.
      */
     public List<Case> listCases() {
@@ -52,13 +79,28 @@ public class CaseService {
     }
 
     /**
-     * Finds a case by unique ID.
+     * Finds a case by unique ID with tolerance for hyphen/underscore variance (e.g. CASE-103 vs CASE_103).
      */
     public Optional<Case> findById(String caseId) {
         if (caseId == null || caseId.trim().isEmpty()) {
             return Optional.empty();
         }
-        return caseRepository.findById(caseId.trim());
+        String trimmed = caseId.trim();
+        Optional<Case> direct = caseRepository.findById(trimmed);
+        if (direct.isPresent()) {
+            return direct;
+        }
+
+        // Check alternate delimiter format (e.g. CASE-103 <-> CASE_103)
+        if (trimmed.contains("-")) {
+            Optional<Case> alt = caseRepository.findById(trimmed.replace('-', '_'));
+            if (alt.isPresent()) return alt;
+        } else if (trimmed.contains("_")) {
+            Optional<Case> alt = caseRepository.findById(trimmed.replace('_', '-'));
+            if (alt.isPresent()) return alt;
+        }
+
+        return Optional.empty();
     }
 
     /**

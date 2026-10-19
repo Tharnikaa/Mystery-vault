@@ -188,4 +188,38 @@ public final class SampleDataFactory {
 
         return Collections.unmodifiableList(clues);
     }
+
+    /**
+     * Seeds Case #103, its 3 suspects, 3 evidence items, and 2 clues into the provided repositories.
+     */
+    public static void populateRepositories(
+            com.mysteryvault.repository.GenericRepository<Case, String> caseRepo,
+            com.mysteryvault.repository.SuspectRepository suspectRepo,
+            com.mysteryvault.repository.EvidenceRepository evidenceRepo,
+            com.mysteryvault.repository.ClueRepository clueRepo) {
+
+        Case sampleCase = createSampleCase();
+        if (caseRepo != null) {
+            caseRepo.save(sampleCase);
+        }
+
+        if (suspectRepo != null) {
+            for (Suspect s : createSampleSuspects()) {
+                suspectRepo.save(s);
+                suspectRepo.linkSuspectToCase(sampleCase.getId(), s.getId());
+            }
+        }
+
+        if (evidenceRepo != null) {
+            for (Evidence e : createSampleEvidence()) {
+                evidenceRepo.save(e);
+            }
+        }
+
+        if (clueRepo != null) {
+            for (Clue c : createSampleClues()) {
+                clueRepo.save(c);
+            }
+        }
+    }
 }

@@ -25,7 +25,12 @@ public class Member1TestSuite {
                 CaseServiceTest.class,
                 SuspectTest.class,
                 EvidenceTest.class,
-                ClueUnlockEngineTest.class
+                ClueUnlockEngineTest.class,
+                CaseJdbcRepositoryTest.class,
+                SuspectJdbcRepositoryTest.class,
+                EvidenceJdbcRepositoryTest.class,
+                DatabaseConfigTest.class,
+                PostgreSqlIntegrationTest.class
         };
 
         int totalTests = 0;

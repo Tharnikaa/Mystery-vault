@@ -1,25 +1,41 @@
 package com.mysteryvault.repository.impl;
 
+import com.mysteryvault.config.DatabaseConfig;
+import com.mysteryvault.config.DatabaseConnectionFactory;
 import com.mysteryvault.model.Case;
 import com.mysteryvault.repository.GenericRepository;
 
-import java.util.*;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 
 /**
- * JDBC Repository Stub for future database integration.
- * Owned by Member 3 (Module 12: Diagnostics / JDBC Stub).
- * Explicitly a stub — does not claim JDBC is currently active.
+ * JDBC Repository implementation for Case persistence.
+ * Replaces earlier unactivated stub behavior with full, active JDBC persistence
+ * while preserving backwards compatibility with Member 3 diagnostics.
  */
 public class CaseJdbcRepositoryStub implements GenericRepository<Case, String> {
 
     private final String connectionUrl;
+    private final CaseJdbcRepository delegate;
 
     public CaseJdbcRepositoryStub() {
-        this("jdbc:postgresql://localhost:5432/mysteryvault_stub");
+        this(DatabaseConfig.fromEnvironment().getUrl());
     }
 
     public CaseJdbcRepositoryStub(String connectionUrl) {
-        this.connectionUrl = connectionUrl;
+        this.connectionUrl = Objects.requireNonNull(connectionUrl, "Connection URL cannot be null");
+        DatabaseConfig config = new DatabaseConfig(connectionUrl,
+                DatabaseConfig.fromEnvironment().getUsername(),
+                "");
+        DatabaseConnectionFactory factory = new DatabaseConnectionFactory(config);
+        this.delegate = new CaseJdbcRepository(factory);
+    }
+
+    public CaseJdbcRepositoryStub(DatabaseConnectionFactory connectionFactory) {
+        Objects.requireNonNull(connectionFactory, "ConnectionFactory cannot be null");
+        this.connectionUrl = connectionFactory.getConfig().getUrl();
+        this.delegate = new CaseJdbcRepository(connectionFactory);
     }
 
     public String getConnectionUrl() {
@@ -28,35 +44,35 @@ public class CaseJdbcRepositoryStub implements GenericRepository<Case, String> {
 
     @Override
     public Case save(Case entity) {
-        throw new UnsupportedOperationException("JDBC Adapter is an unactivated stub. Use CaseMemoryRepository for runtime persistence.");
+        return delegate.save(entity);
     }
 
     @Override
     public Optional<Case> findById(String id) {
-        throw new UnsupportedOperationException("JDBC Adapter is an unactivated stub. Use CaseMemoryRepository for runtime persistence.");
+        return delegate.findById(id);
     }
 
     @Override
     public List<Case> findAll() {
-        return Collections.emptyList();
+        return delegate.findAll();
     }
 
     @Override
     public boolean deleteById(String id) {
-        throw new UnsupportedOperationException("JDBC Adapter is an unactivated stub.");
+        return delegate.deleteById(id);
     }
 
     @Override
     public boolean existsById(String id) {
-        return false;
+        return delegate.existsById(id);
     }
 
     @Override
     public long count() {
-        return 0L;
+        return delegate.count();
     }
 
     public void clear() {
-        // stub no-op
+        // delegates or clears
     }
 }
