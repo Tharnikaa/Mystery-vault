@@ -1,0 +1,23 @@
+# Maven & Build outputs
+target/
+*.class
+dependency-reduced-pom.xml
+
+# IDE and Editor files
+.idea/
+*.iml
+.vscode/
+.project
+.classpath
+.settings/
+
+# OS generated files
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Logs
+*.log
+
+# Webapp ignore (desktop JFrame application)
+src/main/webapp/
