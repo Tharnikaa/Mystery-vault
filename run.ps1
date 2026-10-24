@@ -8,8 +8,18 @@ Get-CimInstance Win32_Process -ErrorAction SilentlyContinue | Where-Object {
 }
 
 # Ensure Maven is on PATH
-if (!(Get-Command mvn -ErrorAction SilentlyContinue) -and (Test-Path "C:\Users\JEYRAM\apache-maven-3.9.6\bin\mvn.cmd")) {
-    $env:PATH = "C:\Users\JEYRAM\apache-maven-3.9.6\bin;" + $env:PATH
+if (!(Get-Command mvn -ErrorAction SilentlyContinue)) {
+    $candidates = @(
+        "$env:USERPROFILE\.m2\apache-maven-3.9.6\bin",
+        "C:\Users\varsh\.m2\apache-maven-3.9.6\bin",
+        "C:\Users\JEYRAM\apache-maven-3.9.6\bin"
+    )
+    foreach ($cand in $candidates) {
+        if (Test-Path "$cand\mvn.cmd") {
+            $env:PATH = "$cand;" + $env:PATH
+            break
+        }
+    }
 }
 
 # Auto-build if JAR does not exist

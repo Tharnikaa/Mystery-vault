@@ -14,11 +14,12 @@ import java.awt.geom.RoundRectangle2D;
 import java.util.ArrayList;
 import java.util.List;
 
-public class TimelinePanel extends JPanel {
+public class TimelinePanel extends JPanel implements com.mysteryvault.ui.swing.navigation.RefreshableScreen {
 
     private final TimelineViewPort timelinePort;
     private final List<TimelineEventViewModel> events = new ArrayList<>();
     private JPanel timelineCanvas;
+    private String currentCaseId = "CASE_101";
 
     public TimelinePanel(TimelineViewPort timelinePort) {
         this.timelinePort = timelinePort != null ? timelinePort : new MockTimelineViewPort();
@@ -26,12 +27,22 @@ public class TimelinePanel extends JPanel {
         setBackground(Theme.BG_DARK);
         setLayout(new BorderLayout());
 
-        this.events.addAll(this.timelinePort.getTimelineForCase("CASE_103"));
+        this.events.addAll(this.timelinePort.getTimelineForCase(currentCaseId));
         initUI();
     }
 
     public TimelinePanel() {
         this(new MockTimelineViewPort());
+    }
+
+    @Override
+    public void refreshScreen(String caseId) {
+        this.currentCaseId = caseId != null ? caseId : "CASE_101";
+        events.clear();
+        events.addAll(timelinePort.getTimelineForCase(this.currentCaseId));
+        if (timelineCanvas != null) {
+            timelineCanvas.repaint();
+        }
     }
 
     private void initUI() {
@@ -116,9 +127,9 @@ public class TimelinePanel extends JPanel {
 
         CustomButton btnAdd = new CustomButton("ADD EVENT", CustomButton.ButtonStyle.GOLD);
         btnAdd.addActionListener(e -> {
-            timelinePort.addEvent("CASE_103", "09:50 PM", "Detective arrives on the scene");
+            timelinePort.addEvent(currentCaseId, "09:50 PM", "Detective arrives on the scene");
             events.clear();
-            events.addAll(timelinePort.getTimelineForCase("CASE_103"));
+            events.addAll(timelinePort.getTimelineForCase(currentCaseId));
             timelineCanvas.repaint();
         });
 

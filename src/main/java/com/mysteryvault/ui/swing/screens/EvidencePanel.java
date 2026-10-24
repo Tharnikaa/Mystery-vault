@@ -16,7 +16,7 @@ import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.List;
 
-public class EvidencePanel extends JPanel {
+public class EvidencePanel extends JPanel implements com.mysteryvault.ui.swing.navigation.RefreshableScreen {
 
     private final EvidenceViewPort evidencePort;
     private final List<EvidenceViewModel> evidenceList = new ArrayList<>();
@@ -28,6 +28,7 @@ public class EvidencePanel extends JPanel {
     private JLabel lblTime;
     private JLabel lblDescription;
     private JPanel photoPanel;
+    private JPanel leftListPanel;
     private final List<GlassPanel> listItemPanels = new ArrayList<>();
 
     public EvidencePanel(EvidenceViewPort evidencePort) {
@@ -36,12 +37,53 @@ public class EvidencePanel extends JPanel {
         setBackground(Theme.BG_DARK);
         setLayout(new BorderLayout());
 
-        this.evidenceList.addAll(this.evidencePort.getEvidenceForCase("CASE_103"));
+        this.evidenceList.addAll(this.evidencePort.getEvidenceForCase("CASE_101"));
         initUI();
     }
 
     public EvidencePanel() {
         this(new MockEvidenceViewPort());
+    }
+
+    @Override
+    public void refreshScreen(String caseId) {
+        evidenceList.clear();
+        evidenceList.addAll(evidencePort.getEvidenceForCase(caseId));
+        if (leftListPanel != null) {
+            leftListPanel.removeAll();
+            listItemPanels.clear();
+            selectedIndex = 0;
+            for (int i = 0; i < evidenceList.size(); i++) {
+                EvidenceViewModel item = evidenceList.get(i);
+                int idx = i;
+                GlassPanel itemCard = new GlassPanel(new FlowLayout(FlowLayout.LEFT, 14, 12));
+                itemCard.setCornerRadius(10);
+                itemCard.setSelected(i == selectedIndex);
+                itemCard.setCursor(new Cursor(Cursor.HAND_CURSOR));
+                itemCard.setMaximumSize(new Dimension(270, 48));
+
+                JLabel titleLbl = new JLabel(item.getTitle());
+                titleLbl.setFont(Theme.bold(13));
+                titleLbl.setForeground(i == selectedIndex ? Theme.TEXT_GOLD : Theme.TEXT_PRIMARY);
+
+                itemCard.add(titleLbl);
+                listItemPanels.add(itemCard);
+
+                itemCard.addMouseListener(new java.awt.event.MouseAdapter() {
+                    @Override
+                    public void mouseClicked(java.awt.event.MouseEvent e) {
+                        selectEvidence(idx);
+                    }
+                });
+                leftListPanel.add(itemCard);
+                leftListPanel.add(Box.createRigidArea(new Dimension(0, 8)));
+            }
+            leftListPanel.revalidate();
+            leftListPanel.repaint();
+            if (!evidenceList.isEmpty()) {
+                selectEvidence(0);
+            }
+        }
     }
 
     private void initUI() {
@@ -52,7 +94,7 @@ public class EvidencePanel extends JPanel {
         mainSplit.setOpaque(false);
         mainSplit.setBorder(BorderFactory.createEmptyBorder(10, 40, 20, 40));
 
-        JPanel leftListPanel = new JPanel();
+        leftListPanel = new JPanel();
         leftListPanel.setLayout(new BoxLayout(leftListPanel, BoxLayout.Y_AXIS));
         leftListPanel.setOpaque(false);
         leftListPanel.setPreferredSize(new Dimension(280, 520));
@@ -204,5 +246,30 @@ public class EvidencePanel extends JPanel {
         }
 
         photoPanel.repaint();
+    }
+
+    public void selectEvidenceById(String evidenceId) {
+        if (evidenceId == null) return;
+        for (int i = 0; i < evidenceList.size(); i++) {
+            if (evidenceList.get(i).getId().equalsIgnoreCase(evidenceId)) {
+                selectEvidence(i);
+                return;
+            }
+        }
+    }
+
+    public void filterOrSelectSuspectEvidence(String suspectId) {
+        if (suspectId == null) return;
+        for (int i = 0; i < evidenceList.size(); i++) {
+            String assoc = evidenceList.get(i).getAssociatedPersonId();
+            if (assoc != null && (assoc.equalsIgnoreCase(suspectId) || assoc.contains(suspectId))) {
+                selectEvidence(i);
+                return;
+            }
+        }
+    }
+
+    public List<EvidenceViewModel> getEvidenceList() {
+        return java.util.Collections.unmodifiableList(evidenceList);
     }
 }

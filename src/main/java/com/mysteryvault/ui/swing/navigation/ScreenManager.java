@@ -57,6 +57,12 @@ public class ScreenManager {
         this.screenSelector = selector;
     }
 
+    private java.util.function.Supplier<String> activeCaseSupplier;
+
+    public void setActiveCaseSupplier(java.util.function.Supplier<String> supplier) {
+        this.activeCaseSupplier = supplier;
+    }
+
     public void showScreen(String screenName) {
         if (!screenName.equals(currentScreen)) {
             navigationHistory.push(currentScreen);
@@ -64,9 +70,14 @@ public class ScreenManager {
         currentScreen = screenName;
         cardLayout.show(container, screenName);
 
+        String activeCase = (activeCaseSupplier != null) ? activeCaseSupplier.get() : "CASE_101";
         for (Component comp : container.getComponents()) {
-            if (comp.isVisible() && comp instanceof com.mysteryvault.ui.swing.screens.ResultPanel) {
-                ((com.mysteryvault.ui.swing.screens.ResultPanel) comp).refreshFromLastResult();
+            if (comp.isVisible()) {
+                if (comp instanceof RefreshableScreen) {
+                    ((RefreshableScreen) comp).refreshScreen(activeCase);
+                } else if (comp instanceof com.mysteryvault.ui.swing.screens.ResultPanel) {
+                    ((com.mysteryvault.ui.swing.screens.ResultPanel) comp).refreshFromLastResult();
+                }
             }
         }
 
@@ -92,5 +103,32 @@ public class ScreenManager {
 
     public String getCurrentScreen() {
         return currentScreen;
+    }
+
+    public void interrogateSuspect(String suspectId) {
+        showScreen(INTERROGATION);
+        for (Component comp : container.getComponents()) {
+            if (comp instanceof com.mysteryvault.ui.swing.screens.InterrogationPanel) {
+                ((com.mysteryvault.ui.swing.screens.InterrogationPanel) comp).selectSuspect(suspectId);
+            }
+        }
+    }
+
+    public void viewEvidenceForSuspect(String suspectId) {
+        showScreen(EVIDENCE_INVESTIGATION);
+        for (Component comp : container.getComponents()) {
+            if (comp instanceof com.mysteryvault.ui.swing.screens.EvidencePanel) {
+                ((com.mysteryvault.ui.swing.screens.EvidencePanel) comp).filterOrSelectSuspectEvidence(suspectId);
+            }
+        }
+    }
+
+    public void selectEvidence(String evidenceId) {
+        showScreen(EVIDENCE_INVESTIGATION);
+        for (Component comp : container.getComponents()) {
+            if (comp instanceof com.mysteryvault.ui.swing.screens.EvidencePanel) {
+                ((com.mysteryvault.ui.swing.screens.EvidencePanel) comp).selectEvidenceById(evidenceId);
+            }
+        }
     }
 }

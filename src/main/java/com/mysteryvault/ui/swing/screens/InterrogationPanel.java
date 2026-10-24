@@ -3,6 +3,7 @@ package com.mysteryvault.ui.swing.screens;
 import com.mysteryvault.ui.swing.components.*;
 import com.mysteryvault.ui.swing.mock.MockInterrogationViewPort;
 import com.mysteryvault.ui.swing.mock.MockSuspectViewPort;
+import com.mysteryvault.ui.swing.navigation.RefreshableScreen;
 import com.mysteryvault.ui.swing.navigation.ScreenManager;
 import com.mysteryvault.ui.swing.ports.InterrogationViewPort;
 import com.mysteryvault.ui.swing.ports.SuspectViewPort;
@@ -16,9 +17,10 @@ import java.awt.*;
 import java.awt.geom.RoundRectangle2D;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
-public class InterrogationPanel extends JPanel {
+public class InterrogationPanel extends JPanel implements RefreshableScreen {
 
     private final InterrogationViewPort interrogationPort;
     private final SuspectViewPort suspectPort;
@@ -27,12 +29,30 @@ public class InterrogationPanel extends JPanel {
     private JPanel chatListPanel;
     private JTextField inputField;
     private JScrollPane chatScrollPane;
+    private JComboBox<String> questionCombo;
+    private JLabel nameLbl;
+    private JLabel roleLbl;
+    private JLabel trustLbl;
+    private StatBar trustBar;
+    private JLabel suspLbl;
+    private StatBar suspBar;
+    private JPanel avatarPanel;
     private SuspectViewModel currentSuspect;
 
     public InterrogationPanel(InterrogationViewPort interrogationPort, SuspectViewPort suspectPort) {
         this.interrogationPort = interrogationPort != null ? interrogationPort : new MockInterrogationViewPort();
         this.suspectPort = suspectPort != null ? suspectPort : new MockSuspectViewPort();
-        this.currentSuspect = this.suspectPort.getSuspectById("MEERA");
+
+        List<SuspectViewModel> suspects = this.suspectPort.getSuspectsForCase("CASE_101");
+        if (!suspects.isEmpty()) {
+            this.currentSuspect = suspects.get(0);
+        } else {
+            this.currentSuspect = this.suspectPort.getSuspectById("SUS_101_3");
+            if (this.currentSuspect == null) {
+                this.currentSuspect = new SuspectViewModel("SUS_101_3", "Marcus Vance", "Head of Security", "Ex-Military Officer", 38,
+                        "Prime Suspect", "Monitoring CCTV booth", "Scene", "None", 75, 25, "suspect_rohan.png", true);
+            }
+        }
 
         setOpaque(true);
         setBackground(Theme.BG_DARK);
@@ -46,6 +66,86 @@ public class InterrogationPanel extends JPanel {
         this(new MockInterrogationViewPort(), new MockSuspectViewPort());
     }
 
+    @Override
+    public void refreshScreen(String caseId) {
+        List<SuspectViewModel> suspects = suspectPort.getSuspectsForCase(caseId);
+        if (currentSuspect == null && !suspects.isEmpty()) {
+            selectSuspect(suspects.get(0).getId());
+        } else if (currentSuspect != null) {
+            boolean found = false;
+            for (SuspectViewModel s : suspects) {
+                if (s.getId().equalsIgnoreCase(currentSuspect.getId())) {
+                    found = true;
+                    selectSuspect(s.getId());
+                    break;
+                }
+            }
+            if (!found && !suspects.isEmpty()) {
+                selectSuspect(suspects.get(0).getId());
+            }
+        }
+    }
+
+    public void selectSuspect(String suspectId) {
+        if (suspectId == null) return;
+        SuspectViewModel s = suspectPort.getSuspectById(suspectId);
+        if (s == null) {
+            List<SuspectViewModel> list = suspectPort.getSuspectsForCase(null);
+            for (SuspectViewModel vm : list) {
+                if (vm.getId().equalsIgnoreCase(suspectId) || vm.getName().equalsIgnoreCase(suspectId)) {
+                    s = vm;
+                    break;
+                }
+            }
+        }
+        if (s != null) {
+            this.currentSuspect = s;
+            updateSuspectDisplay();
+        }
+    }
+
+    public SuspectViewModel getCurrentSuspect() {
+        return currentSuspect;
+    }
+
+    public List<ChatMessageViewModel> getChatMessages() {
+        return Collections.unmodifiableList(chatMessages);
+    }
+
+    private void updateSuspectDisplay() {
+        if (currentSuspect == null) return;
+
+        if (nameLbl != null) nameLbl.setText(currentSuspect.getName());
+        if (roleLbl != null) roleLbl.setText(currentSuspect.getRole() + " • " + currentSuspect.getOccupation());
+        if (trustLbl != null) trustLbl.setText("Trust: " + currentSuspect.getTrust() + "%");
+        if (trustBar != null) trustBar.setProgress(currentSuspect.getTrust());
+        if (suspLbl != null) suspLbl.setText("Suspicion: " + currentSuspect.getSuspicion() + "%");
+        if (suspBar != null) suspBar.setProgress(currentSuspect.getSuspicion());
+
+        if (avatarPanel != null) {
+            avatarPanel.repaint();
+        }
+
+        // Reload available questions
+        if (questionCombo != null) {
+            questionCombo.removeAllItems();
+            List<String> questions = interrogationPort.getAvailableQuestions(currentSuspect.getId());
+            if (questions.isEmpty()) {
+                questionCombo.addItem("Where were you during the incident?");
+                questionCombo.addItem("Can you corroborate your alibi?");
+            } else {
+                for (String q : questions) {
+                    questionCombo.addItem(q);
+                }
+            }
+        }
+
+        // Reload history
+        chatMessages.clear();
+        chatMessages.addAll(interrogationPort.getDialogueHistory(currentSuspect.getId()));
+        rebuildChatMessages();
+    }
+
     private void initUI() {
         ScreenHeader header = new ScreenHeader("7. INTERROGATION");
         add(header, BorderLayout.NORTH);
@@ -54,12 +154,14 @@ public class InterrogationPanel extends JPanel {
         mainSplit.setOpaque(false);
         mainSplit.setBorder(BorderFactory.createEmptyBorder(10, 40, 20, 40));
 
+        // LEFT PROFILE CARD
         GlassPanel leftProfile = new GlassPanel();
         leftProfile.setLayout(new BoxLayout(leftProfile, BoxLayout.Y_AXIS));
-        leftProfile.setPreferredSize(new Dimension(260, 520));
-        leftProfile.setBorder(BorderFactory.createEmptyBorder(24, 20, 24, 20));
+        leftProfile.setPreferredSize(new Dimension(280, 520));
+        leftProfile.setBorder(BorderFactory.createEmptyBorder(20, 18, 20, 18));
+        leftProfile.setBorderColor(Theme.BORDER_GOLD);
 
-        JPanel avatarPanel = new JPanel() {
+        avatarPanel = new JPanel() {
             @Override
             public Dimension getPreferredSize() {
                 return new Dimension(110, 110);
@@ -80,7 +182,8 @@ public class InterrogationPanel extends JPanel {
                 int x = (getWidth() - size) / 2;
                 int y = (getHeight() - size) / 2;
 
-                BufferedImage img = AssetManager.getImage(currentSuspect.getImageKey());
+                String imgKey = currentSuspect != null ? currentSuspect.getImageKey() : "suspect_arjun.jpg";
+                BufferedImage img = AssetManager.getImage(imgKey);
                 BufferedImage rounded = AssetManager.getRoundedImage(img, size, size, 12, Theme.BORDER_GOLD);
                 g2.drawImage(rounded, x, y, null);
 
@@ -90,51 +193,61 @@ public class InterrogationPanel extends JPanel {
         avatarPanel.setOpaque(false);
         avatarPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        JLabel nameLbl = new JLabel(currentSuspect.getName());
+        nameLbl = new JLabel(currentSuspect != null ? currentSuspect.getName() : "Suspect");
         nameLbl.setFont(Theme.titleFont(18));
         nameLbl.setForeground(Theme.TEXT_GOLD);
         nameLbl.setAlignmentX(Component.CENTER_ALIGNMENT);
 
+        roleLbl = new JLabel(currentSuspect != null ? (currentSuspect.getRole() + " • " + currentSuspect.getOccupation()) : "");
+        roleLbl.setFont(Theme.regular(11));
+        roleLbl.setForeground(Theme.TEXT_MUTED);
+        roleLbl.setAlignmentX(Component.CENTER_ALIGNMENT);
+
         JPanel trustBox = new JPanel(new BorderLayout(0, 4));
         trustBox.setOpaque(false);
-        trustBox.setMaximumSize(new Dimension(200, 36));
+        trustBox.setMaximumSize(new Dimension(220, 36));
         trustBox.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        JLabel trustLbl = new JLabel("Trust: " + currentSuspect.getTrust() + "%");
+        int trustVal = currentSuspect != null ? currentSuspect.getTrust() : 50;
+        trustLbl = new JLabel("Trust: " + trustVal + "%");
         trustLbl.setFont(Theme.bold(11));
         trustLbl.setForeground(Theme.TEAL_ACCENT);
 
-        StatBar trustBar = new StatBar(currentSuspect.getTrust(), Theme.TEAL_ACCENT);
-        trustBar.setPreferredSize(new Dimension(180, 7));
+        trustBar = new StatBar(trustVal, Theme.TEAL_ACCENT);
+        trustBar.setPreferredSize(new Dimension(200, 7));
 
         trustBox.add(trustLbl, BorderLayout.NORTH);
         trustBox.add(trustBar, BorderLayout.SOUTH);
 
         JPanel suspBox = new JPanel(new BorderLayout(0, 4));
         suspBox.setOpaque(false);
-        suspBox.setMaximumSize(new Dimension(200, 36));
+        suspBox.setMaximumSize(new Dimension(220, 36));
         suspBox.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        JLabel suspLbl = new JLabel("Suspicion: " + currentSuspect.getSuspicion() + "%");
+        int suspVal = currentSuspect != null ? currentSuspect.getSuspicion() : 50;
+        suspLbl = new JLabel("Suspicion: " + suspVal + "%");
         suspLbl.setFont(Theme.bold(11));
         suspLbl.setForeground(Theme.RED_CONFLICT);
 
-        StatBar suspBar = new StatBar(currentSuspect.getSuspicion(), Theme.RED_CONFLICT);
-        suspBar.setPreferredSize(new Dimension(180, 7));
+        suspBar = new StatBar(suspVal, Theme.RED_CONFLICT);
+        suspBar.setPreferredSize(new Dimension(200, 7));
 
         suspBox.add(suspLbl, BorderLayout.NORTH);
         suspBox.add(suspBar, BorderLayout.SOUTH);
 
         leftProfile.add(avatarPanel);
-        leftProfile.add(Box.createRigidArea(new Dimension(0, 12)));
+        leftProfile.add(Box.createRigidArea(new Dimension(0, 10)));
         leftProfile.add(nameLbl);
-        leftProfile.add(Box.createRigidArea(new Dimension(0, 24)));
+        leftProfile.add(Box.createRigidArea(new Dimension(0, 4)));
+        leftProfile.add(roleLbl);
+        leftProfile.add(Box.createRigidArea(new Dimension(0, 20)));
         leftProfile.add(trustBox);
-        leftProfile.add(Box.createRigidArea(new Dimension(0, 16)));
+        leftProfile.add(Box.createRigidArea(new Dimension(0, 14)));
         leftProfile.add(suspBox);
 
         mainSplit.add(leftProfile, BorderLayout.WEST);
 
+        // RIGHT CHAT PANEL
         GlassPanel rightChatPanel = new GlassPanel(new BorderLayout(0, 12));
         rightChatPanel.setBorder(BorderFactory.createEmptyBorder(18, 20, 18, 20));
 
@@ -150,10 +263,41 @@ public class InterrogationPanel extends JPanel {
         rebuildChatMessages();
         rightChatPanel.add(chatScrollPane, BorderLayout.CENTER);
 
+        // BOTTOM CONTROLS
         JPanel bottomContainer = new JPanel();
         bottomContainer.setLayout(new BoxLayout(bottomContainer, BoxLayout.Y_AXIS));
         bottomContainer.setOpaque(false);
 
+        // 1. Available Question Selector Row
+        JPanel questionSelectRow = new JPanel(new BorderLayout(10, 0));
+        questionSelectRow.setOpaque(false);
+        questionSelectRow.setBorder(BorderFactory.createEmptyBorder(0, 0, 8, 0));
+
+        questionCombo = new JComboBox<>();
+        questionCombo.setFont(Theme.regular(12));
+        questionCombo.setBackground(new Color(25, 34, 50));
+        questionCombo.setForeground(Theme.TEXT_PRIMARY);
+        questionCombo.setFocusable(false);
+        questionCombo.setPreferredSize(new Dimension(500, 34));
+
+        List<String> questions = interrogationPort.getAvailableQuestions(currentSuspect != null ? currentSuspect.getId() : null);
+        if (questions.isEmpty()) {
+            questionCombo.addItem("Where were you during the incident?");
+            questionCombo.addItem("Can you corroborate your alibi?");
+        } else {
+            for (String q : questions) {
+                questionCombo.addItem(q);
+            }
+        }
+
+        CustomButton btnAskQuestion = new CustomButton("ASK TOPIC", CustomButton.ButtonStyle.GOLD);
+        btnAskQuestion.setPreferredSize(new Dimension(110, 34));
+        btnAskQuestion.addActionListener(e -> askSelectedQuestion());
+
+        questionSelectRow.add(questionCombo, BorderLayout.CENTER);
+        questionSelectRow.add(btnAskQuestion, BorderLayout.EAST);
+
+        // 2. Custom Text Inquiry Input Row
         JPanel inputRow = new JPanel(new BorderLayout(10, 0));
         inputRow.setOpaque(false);
 
@@ -168,37 +312,39 @@ public class InterrogationPanel extends JPanel {
         ));
         inputField.addActionListener(e -> sendMessage());
 
-        CustomButton btnSend = new CustomButton("SEND", CustomButton.ButtonStyle.GOLD);
-        btnSend.setPreferredSize(new Dimension(90, 38));
+        CustomButton btnSend = new CustomButton("INQUIRE", CustomButton.ButtonStyle.DARK);
+        btnSend.setPreferredSize(new Dimension(110, 36));
         btnSend.addActionListener(e -> sendMessage());
 
         inputRow.add(inputField, BorderLayout.CENTER);
         inputRow.add(btnSend, BorderLayout.EAST);
 
+        // 3. Action Buttons Row
         JPanel actionRow = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 10));
         actionRow.setOpaque(false);
 
-        CustomButton btnEvidence = new CustomButton("SHOW EVIDENCE", CustomButton.ButtonStyle.DARK);
+        CustomButton btnEvidence = new CustomButton("CONFRONT EVIDENCE", CustomButton.ButtonStyle.DARK);
         btnEvidence.addActionListener(e -> {
-            addMessage(true, "Detective", "[Presents E01: Wine Glass with toxic traces]");
-            ChatMessageViewModel reply = interrogationPort.showEvidence(currentSuspect.getName(), "E01");
-            addMessage(false, reply.getSender(), reply.getMessage());
+            addMessage(true, "Detective", "[Presents case evidence for interrogation analysis]");
+            ChatMessageViewModel reply = interrogationPort.showEvidence(currentSuspect.getId(), "EVD_101_SEC_LOG");
+            addMessage(false, currentSuspect.getName(), reply.getMessage());
         });
 
         CustomButton btnChallenge = new CustomButton("CHALLENGE STATEMENT", CustomButton.ButtonStyle.DARK);
         btnChallenge.addActionListener(e -> {
-            addMessage(true, "Detective", "Security footage shows you at the table at 8:45 PM, not with Arjun!");
-            ChatMessageViewModel reply = interrogationPort.challengeStatement(currentSuspect.getName(), "C1");
-            addMessage(false, reply.getSender(), reply.getMessage());
+            addMessage(true, "Detective", "Your recorded timeline directly conflicts with physical and biometric access logs!");
+            ChatMessageViewModel reply = interrogationPort.challengeStatement(currentSuspect.getId(), "CONTR_101_1");
+            addMessage(false, currentSuspect.getName(), reply.getMessage());
         });
 
-        CustomButton btnExit = new CustomButton("EXIT", CustomButton.ButtonStyle.DANGER);
+        CustomButton btnExit = new CustomButton("RETURN TO HUB", CustomButton.ButtonStyle.DANGER);
         btnExit.addActionListener(e -> ScreenManager.getInstance().showScreen(ScreenManager.INVESTIGATION_HUB));
 
         actionRow.add(btnEvidence);
         actionRow.add(btnChallenge);
         actionRow.add(btnExit);
 
+        bottomContainer.add(questionSelectRow);
         bottomContainer.add(inputRow);
         bottomContainer.add(actionRow);
 
@@ -208,6 +354,18 @@ public class InterrogationPanel extends JPanel {
         add(mainSplit, BorderLayout.CENTER);
     }
 
+    private void askSelectedQuestion() {
+        if (questionCombo == null) return;
+        Object item = questionCombo.getSelectedItem();
+        if (item == null) return;
+        String q = item.toString().trim();
+        if (q.isEmpty()) return;
+
+        addMessage(true, "Detective", q);
+        ChatMessageViewModel reply = interrogationPort.askQuestion(currentSuspect.getId(), q);
+        addMessage(false, currentSuspect.getName(), reply.getMessage());
+    }
+
     private void sendMessage() {
         String text = inputField.getText().trim();
         if (text.isEmpty()) return;
@@ -215,12 +373,8 @@ public class InterrogationPanel extends JPanel {
         addMessage(true, "Detective", text);
         inputField.setText("");
 
-        Timer t = new Timer(500, e -> {
-            ChatMessageViewModel reply = interrogationPort.askQuestion(currentSuspect.getName(), text);
-            addMessage(false, reply.getSender(), reply.getMessage());
-        });
-        t.setRepeats(false);
-        t.start();
+        ChatMessageViewModel reply = interrogationPort.askQuestion(currentSuspect.getId(), text);
+        addMessage(false, currentSuspect.getName(), reply.getMessage());
     }
 
     private void addMessage(boolean isDetective, String sender, String message) {
@@ -264,7 +418,7 @@ public class InterrogationPanel extends JPanel {
             senderLbl.setFont(Theme.bold(11));
             senderLbl.setForeground(msg.isDetective() ? Theme.TEXT_GOLD : Theme.TEAL_ACCENT);
 
-            JLabel textLbl = new JLabel("<html><p style='width: 280px;'>" + msg.getMessage() + "</p></html>");
+            JLabel textLbl = new JLabel("<html><p style='width: 320px;'>" + msg.getMessage() + "</p></html>");
             textLbl.setFont(Theme.regular(13));
             textLbl.setForeground(Theme.TEXT_PRIMARY);
 

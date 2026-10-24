@@ -26,4 +26,8 @@ public class ProfileViewModel {
     public int getAccuracyPercentage() { return accuracyPercentage; }
     public int getCasesAttempted() { return casesAttempted; }
     public int getBestScore() { return bestScore; }
+
+    public String getAccuracyDisplay() {
+        return casesAttempted > 0 ? accuracyPercentage + "%" : "N/A";
+    }
 }

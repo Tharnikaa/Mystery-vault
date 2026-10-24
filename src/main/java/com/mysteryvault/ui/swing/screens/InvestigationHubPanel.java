@@ -10,15 +10,43 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.RoundRectangle2D;
+import java.util.ArrayList;
+import java.util.List;
 
-public class InvestigationHubPanel extends JPanel {
+public class InvestigationHubPanel extends JPanel implements com.mysteryvault.ui.swing.navigation.RefreshableScreen {
+
+    private final com.mysteryvault.ui.swing.ports.CaseViewPort casePort;
+    private JLabel titleLbl;
+    private JLabel subLbl;
 
     public InvestigationHubPanel() {
+        this(null);
+    }
+
+    public InvestigationHubPanel(com.mysteryvault.ui.swing.ports.CaseViewPort casePort) {
+        this.casePort = casePort;
         setOpaque(true);
         setBackground(Theme.BG_DARK);
         setLayout(new BorderLayout());
 
         initUI();
+    }
+
+    @Override
+    public void refreshScreen(String caseId) {
+        if (casePort != null) {
+            com.mysteryvault.ui.swing.viewmodel.CaseCardViewModel active = casePort.getActiveCase();
+            if (active != null) {
+                if (titleLbl != null) titleLbl.setText(active.getTitle().toUpperCase());
+                if (subLbl != null) subLbl.setText("Active Case: " + active.getId() + " • Status: " + active.getStatusBadge() + " • " + active.getDuration());
+            }
+        }
+    }
+
+    private final java.util.List<HubTile> hubTiles = new ArrayList<>();
+
+    public java.util.List<HubTile> getHubTiles() {
+        return java.util.Collections.unmodifiableList(hubTiles);
     }
 
     private void initUI() {
@@ -37,11 +65,11 @@ public class InvestigationHubPanel extends JPanel {
         JPanel titleBox = new JPanel(new GridLayout(2, 1, 0, 3));
         titleBox.setOpaque(false);
 
-        JLabel titleLbl = new JLabel("CASE #103 – THE POISONED DRINK");
+        titleLbl = new JLabel("CASE #101 – THE MISSING DIAMOND");
         titleLbl.setFont(Theme.titleFont(18));
         titleLbl.setForeground(Theme.TEXT_PRIMARY);
 
-        JLabel subLbl = new JLabel("Find who poisoned the victim and determine the motive.");
+        subLbl = new JLabel("Active Mystery Investigation • Uncover the truth.");
         subLbl.setFont(Theme.regular(12));
         subLbl.setForeground(Theme.TEXT_MUTED);
 
@@ -80,29 +108,30 @@ public class InvestigationHubPanel extends JPanel {
         actionGrid.setOpaque(false);
         actionGrid.setPreferredSize(new Dimension(860, 380));
 
-        actionGrid.add(createHubTile("SUSPECTS", "suspects", false, () ->
+        hubTiles.clear();
+        addTile(actionGrid, new HubTile("SUSPECTS", "suspects", false, () ->
                 ScreenManager.getInstance().showScreen(ScreenManager.SUSPECT_SCREEN)));
 
-        actionGrid.add(createHubTile("EVIDENCE", "evidence", true, () ->
+        addTile(actionGrid, new HubTile("EVIDENCE", "evidence", false, () ->
                 ScreenManager.getInstance().showScreen(ScreenManager.EVIDENCE_INVESTIGATION)));
 
-        actionGrid.add(createHubTile("TIMELINE", "timeline", false, () ->
+        addTile(actionGrid, new HubTile("TIMELINE", "timeline", false, () ->
                 ScreenManager.getInstance().showScreen(ScreenManager.INVESTIGATION_TIMELINE)));
 
-        actionGrid.add(createHubTile("INTERROGATE", "interrogate", false, () ->
+        addTile(actionGrid, new HubTile("INTERROGATE", "interrogate", false, () ->
                 ScreenManager.getInstance().showScreen(ScreenManager.INTERROGATION)));
 
-        actionGrid.add(createHubTile("SEARCH", "search", false, () ->
-                ScreenManager.getInstance().showScreen(ScreenManager.DETECTIVE_PROFILE)));
-
-        actionGrid.add(createHubTile("CLUES", "clues", false, () ->
-                ScreenManager.getInstance().showScreen(ScreenManager.EVIDENCE_INVESTIGATION)));
-
-        actionGrid.add(createHubTile("CONNECTIONS", "connections", false, () ->
+        addTile(actionGrid, new HubTile("CONNECTIONS", "connections", false, () ->
                 ScreenManager.getInstance().showScreen(ScreenManager.CASE_CONNECTION_ENGINE)));
 
-        actionGrid.add(createHubTile("ANALYZE CASE", "analyze", true, () ->
+        addTile(actionGrid, new HubTile("ANALYZE CASE", "analyze", false, () ->
                 ScreenManager.getInstance().showScreen(ScreenManager.CASE_ANALYSIS)));
+
+        addTile(actionGrid, new HubTile("FINAL DEDUCTION", "clues", false, () ->
+                ScreenManager.getInstance().showScreen(ScreenManager.FINAL_DEDUCTION)));
+
+        addTile(actionGrid, new HubTile("PROFILE", "search", false, () ->
+                ScreenManager.getInstance().showScreen(ScreenManager.DETECTIVE_PROFILE)));
 
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridx = 0;
@@ -136,57 +165,153 @@ public class InvestigationHubPanel extends JPanel {
         add(bottomBar, BorderLayout.SOUTH);
     }
 
-    private JPanel createHubTile(String title, String iconType, boolean isGoldHighlighted, Runnable onClick) {
-        GlassPanel tile = new GlassPanel(new BorderLayout());
-        tile.setCornerRadius(14);
-        tile.setSelected(isGoldHighlighted);
-        tile.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        tile.setBorder(BorderFactory.createEmptyBorder(16, 12, 16, 12));
-
-        JPanel iconCanvas = new JPanel() {
-            @Override
-            protected void paintComponent(Graphics g) {
-                super.paintComponent(g);
-                Graphics2D g2 = (Graphics2D) g.create();
-                Theme.applyQualityHints(g2);
-                int cx = getWidth() / 2;
-                int cy = getHeight() / 2;
-                drawIcon(g2, iconType, cx, cy, isGoldHighlighted);
-                g2.dispose();
-            }
-        };
-        iconCanvas.setOpaque(false);
-
-        JLabel label = new JLabel(title, SwingConstants.CENTER);
-        label.setFont(Theme.bold(13));
-        label.setForeground(isGoldHighlighted ? Theme.TEXT_GOLD : Theme.TEXT_PRIMARY);
-
-        tile.add(iconCanvas, BorderLayout.CENTER);
-        tile.add(label, BorderLayout.SOUTH);
-
-        tile.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                if (onClick != null) onClick.run();
-            }
-
-            @Override
-            public void mouseEntered(MouseEvent e) {
-                tile.setBackgroundColor(Theme.CARD_BG_HOVER);
-                tile.repaint();
-            }
-
-            @Override
-            public void mouseExited(MouseEvent e) {
-                tile.setBackgroundColor(Theme.CARD_BG);
-                tile.repaint();
-            }
-        });
-
-        return tile;
+    private void addTile(JPanel grid, HubTile tile) {
+        hubTiles.add(tile);
+        grid.add(tile);
     }
 
-    private void drawIcon(Graphics2D g2, String type, int cx, int cy, boolean isGold) {
+    /**
+     * Reusable HubTile component implementing Change 2:
+     * Every tile has a visible gold border in its normal state,
+     * brighter gold border and subtle highlight on hover,
+     * stronger gold border and subtle gold tint when selected.
+     */
+    public static class HubTile extends JPanel {
+        private final String title;
+        private final String iconType;
+        private final Runnable onClick;
+        private boolean isHovered = false;
+        private boolean isSelected = false;
+
+        public static final Color GOLD_BORDER_DEFAULT = Theme.BORDER_GOLD;
+        public static final Color GOLD_BORDER_HOVER = new Color(255, 218, 125);
+        public static final Color GOLD_BORDER_SELECTED = new Color(255, 230, 150);
+
+        private static final Color BG_DEFAULT = Theme.CARD_BG;
+        private static final Color BG_HOVER = Theme.CARD_BG_HOVER;
+        private static final Color BG_SELECTED = new Color(30, 42, 64, 250);
+        private static final Color TINT_GOLD_HOVER = new Color(212, 163, 89, 25);
+        private static final Color TINT_GOLD_SELECTED = new Color(212, 163, 89, 45);
+
+        public HubTile(String title, String iconType, boolean isSelected, Runnable onClick) {
+            this.title = title;
+            this.iconType = iconType;
+            this.isSelected = isSelected;
+            this.onClick = onClick;
+
+            setOpaque(false);
+            setCursor(new Cursor(Cursor.HAND_CURSOR));
+            setLayout(new BorderLayout());
+            setBorder(BorderFactory.createEmptyBorder(16, 12, 16, 12));
+
+            JPanel iconCanvas = new JPanel() {
+                @Override
+                protected void paintComponent(Graphics g) {
+                    super.paintComponent(g);
+                    Graphics2D g2 = (Graphics2D) g.create();
+                    Theme.applyQualityHints(g2);
+                    int cx = getWidth() / 2;
+                    int cy = getHeight() / 2;
+                    drawHubTileIcon(g2, iconType, cx, cy, isHovered || isSelected);
+                    g2.dispose();
+                }
+            };
+            iconCanvas.setOpaque(false);
+
+            JLabel label = new JLabel(title, SwingConstants.CENTER);
+            label.setFont(Theme.bold(13));
+            label.setForeground(isSelected ? Theme.TEXT_GOLD : Theme.TEXT_PRIMARY);
+
+            add(iconCanvas, BorderLayout.CENTER);
+            add(label, BorderLayout.SOUTH);
+
+            addMouseListener(new MouseAdapter() {
+                @Override
+                public void mouseEntered(MouseEvent e) {
+                    isHovered = true;
+                    label.setForeground(Theme.TEXT_GOLD);
+                    repaint();
+                }
+
+                @Override
+                public void mouseExited(MouseEvent e) {
+                    isHovered = false;
+                    label.setForeground(isSelected ? Theme.TEXT_GOLD : Theme.TEXT_PRIMARY);
+                    repaint();
+                }
+
+                @Override
+                public void mouseClicked(MouseEvent e) {
+                    if (onClick != null) onClick.run();
+                }
+            });
+        }
+
+        public String getTitle() {
+            return title;
+        }
+
+        public boolean isSelected() {
+            return isSelected;
+        }
+
+        public void setSelected(boolean selected) {
+            this.isSelected = selected;
+            repaint();
+        }
+
+        public Color getCurrentBorderColor() {
+            if (isSelected) return GOLD_BORDER_SELECTED;
+            if (isHovered) return GOLD_BORDER_HOVER;
+            return GOLD_BORDER_DEFAULT;
+        }
+
+        public boolean hasGoldBorder() {
+            return true;
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            Theme.applyQualityHints(g2);
+
+            int w = getWidth();
+            int h = getHeight();
+            RoundRectangle2D shape = new RoundRectangle2D.Float(1.5f, 1.5f, w - 3f, h - 3f, 14, 14);
+
+            // 1. Dark navy/charcoal background
+            Color bg = isSelected ? BG_SELECTED : (isHovered ? BG_HOVER : BG_DEFAULT);
+            g2.setColor(bg);
+            g2.fill(shape);
+
+            // Subtle gold highlight on hover / selection
+            if (isSelected) {
+                g2.setColor(TINT_GOLD_SELECTED);
+                g2.fill(shape);
+            } else if (isHovered) {
+                g2.setColor(TINT_GOLD_HOVER);
+                g2.fill(shape);
+            }
+
+            // 2. Visible gold border in ALL states
+            if (isSelected) {
+                g2.setColor(GOLD_BORDER_SELECTED);
+                g2.setStroke(new BasicStroke(2.5f));
+            } else if (isHovered) {
+                g2.setColor(GOLD_BORDER_HOVER);
+                g2.setStroke(new BasicStroke(2.2f));
+            } else {
+                g2.setColor(GOLD_BORDER_DEFAULT);
+                g2.setStroke(new BasicStroke(1.6f));
+            }
+            g2.draw(shape);
+
+            g2.dispose();
+            super.paintComponent(g);
+        }
+    }
+
+    private static void drawHubTileIcon(Graphics2D g2, String type, int cx, int cy, boolean isGold) {
         Color mainColor = isGold ? Theme.GOLD_PRIMARY : Theme.TEXT_SECONDARY;
         g2.setColor(mainColor);
         g2.setStroke(new BasicStroke(2.2f));

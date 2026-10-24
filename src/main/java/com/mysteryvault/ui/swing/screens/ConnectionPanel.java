@@ -22,7 +22,7 @@ import java.util.List;
  * selected entity relationships and discovered connection summaries.
  * Graph node selection updates the UI dynamically without mutating underlying case data.
  */
-public class ConnectionPanel extends JPanel {
+public class ConnectionPanel extends JPanel implements com.mysteryvault.ui.swing.navigation.RefreshableScreen {
 
     private final ConnectionViewPort connectionPort;
     private final CustomGraphCanvas graphCanvas;
@@ -30,6 +30,7 @@ public class ConnectionPanel extends JPanel {
     private JLabel selectedNodeNameLbl;
     private JLabel selectedNodeTypeLbl;
     private JPanel itemsBox;
+    private String currentCaseId = "CASE_101";
     private final List<String> currentDisplayedRows = new ArrayList<>();
 
     public ConnectionPanel(ConnectionViewPort connectionPort) {
@@ -47,6 +48,15 @@ public class ConnectionPanel extends JPanel {
         this(new MockConnectionViewPort());
     }
 
+    @Override
+    public void refreshScreen(String caseId) {
+        this.currentCaseId = caseId != null ? caseId : "CASE_101";
+        List<GraphNode> nodes = connectionPort.getGraphNodes(this.currentCaseId);
+        List<Connection> connections = connectionPort.getConnections(this.currentCaseId);
+        graphCanvas.setGraph(nodes, connections);
+        graphCanvas.repaint();
+    }
+
     private void initUI() {
         ScreenHeader header = new ScreenHeader("9. CASE CONNECTION ENGINE");
         add(header, BorderLayout.NORTH);
@@ -56,8 +66,8 @@ public class ConnectionPanel extends JPanel {
         mainSplit.setBorder(BorderFactory.createEmptyBorder(10, 40, 20, 40));
 
         // Load graph data into CustomGraphCanvas
-        List<GraphNode> nodes = connectionPort.getGraphNodes("CASE_103");
-        List<Connection> connections = connectionPort.getConnections("CASE_103");
+        List<GraphNode> nodes = connectionPort.getGraphNodes(currentCaseId);
+        List<Connection> connections = connectionPort.getConnections(currentCaseId);
         graphCanvas.setGraph(nodes, connections);
 
         mainSplit.add(graphCanvas, BorderLayout.CENTER);
@@ -140,7 +150,7 @@ public class ConnectionPanel extends JPanel {
         itemsBox.removeAll();
         currentDisplayedRows.clear();
 
-        List<Connection> allConnections = connectionPort.getConnections("CASE_103");
+        List<Connection> allConnections = connectionPort.getConnections(currentCaseId);
         List<Connection> related = new ArrayList<>();
         for (Connection c : allConnections) {
             if (node.getId().equalsIgnoreCase(c.getSourceId()) || node.getId().equalsIgnoreCase(c.getTargetId())) {
@@ -181,7 +191,7 @@ public class ConnectionPanel extends JPanel {
         itemsBox.add(summarySectionTitle);
         itemsBox.add(Box.createRigidArea(new Dimension(0, 8)));
 
-        List<String> summaries = connectionPort.getDiscoveredConnectionSummaries("CASE_103");
+        List<String> summaries = connectionPort.getDiscoveredConnectionSummaries(currentCaseId);
         for (int i = 0; i < summaries.size(); i++) {
             Color bulletColor = (i == 1) ? Theme.TEAL_ACCENT : (i == 2 ? Theme.GOLD_PRIMARY : (i == 3 ? Theme.RED_CONFLICT : Theme.TEXT_PRIMARY));
             itemsBox.add(createConnectionRow(summaries.get(i), bulletColor));

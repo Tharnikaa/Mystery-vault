@@ -95,13 +95,14 @@ public class MainFrame extends JFrame {
         screenContainer.setOpaque(false);
 
         screenManager = new ScreenManager(screenContainer, cardLayout);
+        screenManager.setActiveCaseSupplier(() -> this.casePort != null && this.casePort.getActiveCase() != null ? this.casePort.getActiveCase().getId() : "CASE_101");
 
         // Register all 12 screen panels
         screenContainer.add(new MainMenuPanel(), ScreenManager.MAIN_MENU);
         screenContainer.add(new DetectiveProfilePanel(this.profilePort), ScreenManager.DETECTIVE_PROFILE);
         screenContainer.add(new CaseSelectionPanel(this.casePort), ScreenManager.CASE_SELECTION);
-        screenContainer.add(new InvestigationHubPanel(), ScreenManager.INVESTIGATION_HUB);
-        screenContainer.add(new SuspectPanel(this.suspectPort), ScreenManager.SUSPECT_SCREEN);
+        screenContainer.add(new InvestigationHubPanel(this.casePort), ScreenManager.INVESTIGATION_HUB);
+        screenContainer.add(new SuspectPanel(this.suspectPort, this.evidencePort), ScreenManager.SUSPECT_SCREEN);
         screenContainer.add(new EvidencePanel(this.evidencePort), ScreenManager.EVIDENCE_INVESTIGATION);
         screenContainer.add(new InterrogationPanel(this.interrogationPort, this.suspectPort), ScreenManager.INTERROGATION);
         screenContainer.add(new TimelinePanel(this.timelinePort), ScreenManager.INVESTIGATION_TIMELINE);

@@ -2,6 +2,7 @@ package com.mysteryvault.ui.swing.screens;
 
 import com.mysteryvault.ui.swing.components.*;
 import com.mysteryvault.ui.swing.mock.MockProfileViewPort;
+import com.mysteryvault.ui.swing.navigation.RefreshableScreen;
 import com.mysteryvault.ui.swing.navigation.ScreenManager;
 import com.mysteryvault.ui.swing.ports.ProfileViewPort;
 import com.mysteryvault.ui.swing.theme.AssetManager;
@@ -13,9 +14,21 @@ import java.awt.*;
 import java.awt.geom.Ellipse2D;
 import java.awt.image.BufferedImage;
 
-public class DetectiveProfilePanel extends JPanel {
+/**
+ * Screen 2: Detective Profile Screen.
+ * Implements RefreshableScreen to automatically reflect persisted progression immediately.
+ */
+public class DetectiveProfilePanel extends JPanel implements RefreshableScreen {
 
     private final ProfileViewPort profilePort;
+
+    private JLabel lblRank;
+    private JLabel lblXp;
+    private JPanel xpBarContainer;
+    private JLabel valSolved;
+    private JLabel valAccuracy;
+    private JLabel valAttempted;
+    private JLabel valBestScore;
 
     public DetectiveProfilePanel(ProfileViewPort profilePort) {
         this.profilePort = profilePort != null ? profilePort : new MockProfileViewPort();
@@ -28,6 +41,30 @@ public class DetectiveProfilePanel extends JPanel {
 
     public DetectiveProfilePanel() {
         this(new MockProfileViewPort());
+    }
+
+    @Override
+    public void refreshScreen(String caseId) {
+        ProfileViewModel profile = profilePort.getPlayerProfile();
+        if (profile != null) {
+            if (lblRank != null) lblRank.setText("Rank: " + profile.getRank());
+            if (lblXp != null) lblXp.setText(profile.getXp() + " XP");
+
+            if (xpBarContainer != null) {
+                xpBarContainer.removeAll();
+                int progress = Math.min(100, (profile.getXp() * 100) / 1000);
+                StatBar bar = new StatBar(progress, Theme.GOLD_PRIMARY);
+                bar.setPreferredSize(new Dimension(270, 8));
+                xpBarContainer.add(bar, BorderLayout.CENTER);
+                xpBarContainer.revalidate();
+                xpBarContainer.repaint();
+            }
+
+            if (valSolved != null) valSolved.setText(profile.getCasesSolved() + "/" + profile.getTotalCases());
+            if (valAccuracy != null) valAccuracy.setText(profile.getAccuracyDisplay());
+            if (valAttempted != null) valAttempted.setText(String.valueOf(profile.getCasesAttempted()));
+            if (valBestScore != null) valBestScore.setText(String.valueOf(profile.getBestScore()));
+        }
     }
 
     private void initUI() {
@@ -83,7 +120,7 @@ public class DetectiveProfilePanel extends JPanel {
         lblTitle.setForeground(Theme.TEXT_PRIMARY);
         lblTitle.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        JLabel lblRank = new JLabel("Rank: " + profile.getRank());
+        lblRank = new JLabel("Rank: " + profile.getRank());
         lblRank.setFont(Theme.bold(14));
         lblRank.setForeground(Theme.TEXT_GOLD);
         lblRank.setAlignmentX(Component.CENTER_ALIGNMENT);
@@ -93,14 +130,18 @@ public class DetectiveProfilePanel extends JPanel {
         xpPanel.setMaximumSize(new Dimension(340, 24));
         xpPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        JLabel lblXp = new JLabel(profile.getXp() + " XP");
+        lblXp = new JLabel(profile.getXp() + " XP");
         lblXp.setFont(Theme.bold(12));
         lblXp.setForeground(Theme.TEXT_GOLD);
 
-        StatBar xpBar = new StatBar(profile.getXp(), Theme.GOLD_PRIMARY);
+        xpBarContainer = new JPanel(new BorderLayout());
+        xpBarContainer.setOpaque(false);
+        int initialProgress = Math.min(100, (profile.getXp() * 100) / 1000);
+        StatBar xpBar = new StatBar(initialProgress, Theme.GOLD_PRIMARY);
         xpBar.setPreferredSize(new Dimension(270, 8));
+        xpBarContainer.add(xpBar, BorderLayout.CENTER);
 
-        xpPanel.add(xpBar, BorderLayout.CENTER);
+        xpPanel.add(xpBarContainer, BorderLayout.CENTER);
         xpPanel.add(lblXp, BorderLayout.EAST);
 
         JPanel statsGrid = new JPanel(new GridLayout(1, 4, 12, 0));
@@ -108,10 +149,15 @@ public class DetectiveProfilePanel extends JPanel {
         statsGrid.setMaximumSize(new Dimension(480, 80));
         statsGrid.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        statsGrid.add(createStatCell("Cases Solved", profile.getCasesSolved() + "/" + profile.getTotalCases(), Theme.TEXT_PRIMARY));
-        statsGrid.add(createStatCell("Accuracy", profile.getAccuracyPercentage() + "%", Theme.TEAL_ACCENT));
-        statsGrid.add(createStatCell("Cases Attempted", String.valueOf(profile.getCasesAttempted()), Theme.TEXT_PRIMARY));
-        statsGrid.add(createStatCell("Best Score", String.valueOf(profile.getBestScore()), Theme.TEXT_GOLD));
+        valSolved = new JLabel(profile.getCasesSolved() + "/" + profile.getTotalCases(), SwingConstants.CENTER);
+        valAccuracy = new JLabel(profile.getAccuracyDisplay(), SwingConstants.CENTER);
+        valAttempted = new JLabel(String.valueOf(profile.getCasesAttempted()), SwingConstants.CENTER);
+        valBestScore = new JLabel(String.valueOf(profile.getBestScore()), SwingConstants.CENTER);
+
+        statsGrid.add(createStatCell("Cases Solved", valSolved, Theme.TEXT_PRIMARY));
+        statsGrid.add(createStatCell("Accuracy", valAccuracy, Theme.TEAL_ACCENT));
+        statsGrid.add(createStatCell("Cases Attempted", valAttempted, Theme.TEXT_PRIMARY));
+        statsGrid.add(createStatCell("Best Score", valBestScore, Theme.TEXT_GOLD));
 
         CustomButton btnContinue = new CustomButton("CONTINUE", CustomButton.ButtonStyle.GOLD);
         btnContinue.setPreferredSize(new Dimension(240, 42));
@@ -142,14 +188,13 @@ public class DetectiveProfilePanel extends JPanel {
         add(centerWrapper, BorderLayout.CENTER);
     }
 
-    private JPanel createStatCell(String title, String value, Color valColor) {
+    private JPanel createStatCell(String title, JLabel valLbl, Color valColor) {
         GlassPanel cell = new GlassPanel(new BorderLayout(0, 4));
         cell.setBackgroundColor(Theme.CARD_INNER);
         cell.setBorderColor(Theme.BORDER_SUBTLE);
         cell.setCornerRadius(8);
         cell.setBorder(BorderFactory.createEmptyBorder(10, 6, 10, 6));
 
-        JLabel valLbl = new JLabel(value, SwingConstants.CENTER);
         valLbl.setFont(Theme.bold(17));
         valLbl.setForeground(valColor);
 

@@ -10,9 +10,10 @@ import com.mysteryvault.ui.swing.viewmodel.AnalysisViewModel;
 import javax.swing.*;
 import java.awt.*;
 
-public class AnalysisPanel extends JPanel {
+public class AnalysisPanel extends JPanel implements com.mysteryvault.ui.swing.navigation.RefreshableScreen {
 
     private final AnalysisViewPort analysisPort;
+    private String currentCaseId = "CASE_101";
 
     public AnalysisPanel(AnalysisViewPort analysisPort) {
         this.analysisPort = analysisPort != null ? analysisPort : new MockAnalysisViewPort();
@@ -20,18 +21,27 @@ public class AnalysisPanel extends JPanel {
         setBackground(Theme.BG_DARK);
         setLayout(new BorderLayout());
 
-        initUI();
+        initUI(currentCaseId);
     }
 
     public AnalysisPanel() {
         this(new MockAnalysisViewPort());
     }
 
-    private void initUI() {
+    @Override
+    public void refreshScreen(String caseId) {
+        this.currentCaseId = caseId != null ? caseId : "CASE_101";
+        removeAll();
+        initUI(this.currentCaseId);
+        revalidate();
+        repaint();
+    }
+
+    private void initUI(String caseId) {
         ScreenHeader header = new ScreenHeader("10. CASE ANALYSIS");
         add(header, BorderLayout.NORTH);
 
-        AnalysisViewModel analysis = analysisPort.getAnalysisResults("CASE_103");
+        AnalysisViewModel analysis = analysisPort.getAnalysisResults(caseId);
 
         JPanel centerWrapper = new JPanel(new GridBagLayout());
         centerWrapper.setOpaque(false);

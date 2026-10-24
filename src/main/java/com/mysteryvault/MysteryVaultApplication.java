@@ -1,8 +1,10 @@
 package com.mysteryvault;
 
+import com.mysteryvault.analyzer.ConcurrentAnalysisManager;
+import com.mysteryvault.database.CaseDatabaseManager;
 import com.mysteryvault.service.CaseSolverEngine;
 import com.mysteryvault.ui.swing.MainFrame;
-import com.mysteryvault.ui.swing.mock.*;
+import com.mysteryvault.ui.swing.adapters.*;
 import com.mysteryvault.ui.swing.ports.*;
 
 import javax.swing.*;
@@ -11,7 +13,7 @@ import javax.swing.*;
  * Mystery Vault — Uncover the Truth
  *
  * Single production main application entry point and composition root.
- * Owned by Member 4.
+ * Initializes SQLite databases and wires all production adapters and services to the 12-screen UI.
  */
 public class MysteryVaultApplication {
 
@@ -20,23 +22,29 @@ public class MysteryVaultApplication {
         System.setProperty("awt.useSystemAAFontSettings", "on");
         System.setProperty("swing.aatext", "true");
 
+        // 1. Initialize & seed SQLite databases programmatically
+        CaseDatabaseManager dbManager = new CaseDatabaseManager();
+        try {
+            dbManager.initializeAndSeedAll();
+        } catch (Exception e) {
+            System.err.println("Database initialization status: " + e.getMessage());
+        }
+
         SwingUtilities.invokeLater(() -> {
-            // Application Composition Root
-            // Currently wired to deterministic presentation mock adapters for standalone execution.
-            // When teammates merge their services, production adapters will be wired here.
+            // 2. Application Composition Root — Live Integrated Adapters
+            CaseSolverEngine solverEngine = new CaseSolverEngine(false);
+            ConcurrentAnalysisManager analysisManager = new ConcurrentAnalysisManager(dbManager);
 
-            CaseSolverEngine solverEngine = new CaseSolverEngine();
-
-            CaseViewPort casePort = new MockCaseViewPort();
-            SuspectViewPort suspectPort = new MockSuspectViewPort();
-            EvidenceViewPort evidencePort = new MockEvidenceViewPort();
-            TimelineViewPort timelinePort = new MockTimelineViewPort();
-            InterrogationViewPort interrogationPort = new MockInterrogationViewPort();
-            ConnectionViewPort connectionPort = new MockConnectionViewPort();
-            AnalysisViewPort analysisPort = new MockAnalysisViewPort();
-            DeductionViewPort deductionPort = new MockDeductionViewPort(solverEngine);
-            ReportViewPort reportPort = new MockReportViewPort();
-            ProfileViewPort profilePort = new MockProfileViewPort();
+            CaseViewPort casePort = new IntegratedCaseAdapter(dbManager);
+            SuspectViewPort suspectPort = new IntegratedSuspectAdapter(dbManager);
+            EvidenceViewPort evidencePort = new IntegratedEvidenceAdapter(dbManager);
+            TimelineViewPort timelinePort = new IntegratedTimelineAdapter(dbManager);
+            InterrogationViewPort interrogationPort = new IntegratedInterrogationAdapter(dbManager);
+            ConnectionViewPort connectionPort = new IntegratedConnectionAdapter(dbManager);
+            AnalysisViewPort analysisPort = new IntegratedAnalysisAdapter(dbManager, analysisManager);
+            DeductionViewPort deductionPort = new IntegratedDeductionAdapter(dbManager, solverEngine);
+            ReportViewPort reportPort = new IntegratedReportAdapter(dbManager);
+            ProfileViewPort profilePort = new IntegratedProfileAdapter(dbManager);
 
             MainFrame frame = new MainFrame(
                     casePort,

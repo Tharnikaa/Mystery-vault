@@ -215,7 +215,14 @@ public class ResultPanel extends JPanel {
         CustomButton btnReport = new CustomButton("CASE REPORT", CustomButton.ButtonStyle.DARK);
         btnReport.addActionListener(e -> {
             DeductionResult current = deductionPort.getLastResult();
-            String caseId = (current != null && current.getCaseTitle() != null) ? "CASE_103" : "CASE_103";
+            String caseId = "CASE_101";
+            if (current != null && current.getCaseTitle() != null) {
+                String t = current.getCaseTitle().toUpperCase();
+                if (t.contains("101") || t.contains("DIAMOND")) caseId = "CASE_101";
+                else if (t.contains("102") || t.contains("LIBRARY")) caseId = "CASE_102";
+                else if (t.contains("103") || t.contains("POISON")) caseId = "CASE_103";
+                else if (t.contains("104") || t.contains("PROTOTYPE")) caseId = "CASE_104";
+            }
             ReportViewModel report = reportPort.generateReport(caseId);
             JTextArea area = new JTextArea(report.getOfficialSummary());
             area.setFont(new Font("Consolas", Font.PLAIN, 12));
@@ -226,10 +233,10 @@ public class ResultPanel extends JPanel {
             area.setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
 
             JScrollPane sp = new JScrollPane(area);
-            sp.setPreferredSize(new Dimension(520, 260));
+            sp.setPreferredSize(new Dimension(560, 320));
             sp.setBorder(BorderFactory.createLineBorder(Theme.BORDER_GOLD, 1));
 
-            JOptionPane.showMessageDialog(this, sp, "Case Dossier Report", JOptionPane.INFORMATION_MESSAGE);
+            JOptionPane.showMessageDialog(this, sp, "Official Investigation Dossier — " + report.getCaseTitle(), JOptionPane.INFORMATION_MESSAGE);
         });
 
         CustomButton btnReturn = new CustomButton("RETURN TO MENU", CustomButton.ButtonStyle.GOLD);
