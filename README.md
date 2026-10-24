@@ -1,107 +1,210 @@
 # MysteryVault: Uncover the Truth
-**Complete Desktop Detective Investigation Game**
 
-MysteryVault is an immersive desktop detective game built with **Java 17+, Java Swing, AWT, Java2D, and SQLite via JDBC**. Players analyze evidence, interrogate suspects, reconstruct timelines, identify contradictions, discover connections on an interactive clue network graph, and formulate final deduction theories with rigorous benchmark scoring.
+**A Desktop Detective Mystery Game UI Built with Java Swing**
 
----
+MysteryVault is a Java desktop detective game prototype that presents a cinematic investigation experience. Players navigate through detective profiles, case selection, suspects, evidence, interrogations, timelines, clue connections, case analysis, and final deduction screens.
 
-## 🔍 Features & Architecture Overview
+The project focuses on a native desktop interface built with Java Swing, AWT, and Java2D, featuring a dark noir theme, gold accents, custom-drawn components, and screen-to-screen navigation.
 
-- **100% Native Java Desktop Architecture:** Zero web frameworks, zero Spring, zero HTML/React/Python/JavaFX. Pure Java Swing & Java2D graphics with custom dark noir styling and smooth anti-aliased rendering.
-- **Isolated SQLite Storage per Case:**
-  - `data/mysteryvault_catalog.db`: Global case directory, player profile (XP, rank, accuracy, best score), and global saves.
-  - `data/cases/case_101.db`: Case #101 — *The Missing Diamond* (Marcus Vance heist).
-  - `data/cases/case_102.db`: Case #102 — *The Library Code* (Dr. Harrison Vance cipher fraud).
-  - `data/cases/case_103.db`: Case #103 — *The Poisoned Drink* (Vivienne Sinclair gala poisoning).
-  - `data/cases/case_104.db`: Case #104 — *The Vanishing Prototype* (Dr. Elena Rostova corporate espionage).
-- **Automated Database Seeding:** Clean programmatic schema migration and storyline population via Java JDBC. No external SQL scripts or manual DB operations required.
-- **Multi-threaded Background Analytics:** `ConcurrentAnalysisManager` coordinates parallel analysis tasks (`EvidenceAnalyzerTask`, `TimelineAnalyzerTask`, `StatementAnalyzerTask`) via `ExecutorService`.
-- **Deterministic Clue & Deduction Engine:** Prerequisite dependency validation (`ClueUnlockEngine`) and strict scoring rubrics (`CaseSolverEngine`) enforcing accurate suspect, motive, and decisive evidence matching.
-- **Self-Contained Executable Fat JAR:** Includes SQLite JDBC and SLF4J, packaged with `maven-shade-plugin`.
+## Overview
 
----
+- **Platform:** Desktop application
+- **Language:** Java 17+
+- **UI Framework:** Java Swing
+- **Graphics:** AWT and Java2D
+- **Build System:** Apache Maven
+- **Database Dependency:** SQLite JDBC
+- **Application Entry Point:** `com.mysteryvault.MysteryVaultApplication`
 
-## 🖥️ The 12 Screen Panels
+## Features
 
-| # | Screen Name | Panel Class | Functionality |
-|---|---|---|---|
-| **1** | **Main Menu** | `MainMenuPanel` | Banner collage, Resume Investigation, Select Case, View Dossier, Exit. |
-| **2** | **Detective Profile** | `DetectiveProfilePanel` | Detective badge, XP, rank progression, accuracy, case statistics. |
-| **3** | **Case Selection** | `CaseSelectionPanel` | Grid of 4 cases with difficulty badges, summaries, and launch triggers. |
-| **4** | **Investigation Hub** | `InvestigationHubPanel` | Case mission overview, recent timeline alert, quick action cards. |
-| **5** | **Suspect Screen** | `SuspectPanel` | Suspect cards, alibi statements, suspicion levels, portraits. |
-| **6** | **Evidence Investigation** | `EvidencePanel` | Physical & digital evidence catalog, location traces, examination notes. |
-| **7** | **Interrogation** | `InterrogationPanel` | Interactive suspect dialog, live question prompts, contradiction detection. |
-| **8** | **Timeline** | `TimelinePanel` | Chronological event list, timestamped actions, conflict highlights. |
-| **9** | **Clue Network Graph** | `ConnectionPanel` | Interactive Java2D physics node graph linking suspects, evidence, and clues. |
-| **10** | **Case Analysis** | `AnalysisPanel` | Real-time concurrent progress meters across evidence, timeline, statements. |
-| **11** | **Final Deduction** | `DeductionPanel` | Accusation assembly: select suspect, motive, supporting evidence, and submit. |
-| **12** | **Case Result** | `ResultPanel` | Verdict outcome (SOLVED / UNRESOLVED), score breakdown, rank, dossier export. |
+### Cinematic Noir Interface
 
----
+- Dark navy and charcoal backgrounds with gold accents.
+- Custom-drawn buttons with hover and pressed states.
+- Rounded cards, status badges, and progress indicators.
+- Anti-aliased Java2D graphics and image scaling.
+- Consistent styling across the investigation screens.
 
-## 🚀 Prerequisites & Build Instructions
+### Case Investigation Interface
 
-### Prerequisites
-- **Java Development Kit (JDK):** Version 17 or newer (Tested on OpenJDK 25).
-- **Apache Maven:** Version 3.8+ (Automatically resolved via `build.ps1` / `run.ps1` if installed locally).
+The application contains 12 main screens representing the detective investigation workflow.
 
-### 1. Build and Test
-Run Maven to compile all 82 source files and execute all 39 JUnit 5 test cases:
+| # | Screen | Purpose |
+|---|---|---|
+| 1 | Main Menu | Access the main game menu and navigation options. |
+| 2 | Detective Profile | Display detective rank, XP, and case statistics. |
+| 3 | Case Selection | Browse four case cards and select an investigation. |
+| 4 | Investigation Hub | Access suspects, evidence, timeline, clues, and analysis. |
+| 5 | Suspect Screen | View suspect profiles, portraits, and suspicion indicators. |
+| 6 | Evidence Investigation | Browse evidence and access examination actions. |
+| 7 | Interrogation | View dialogue elements and suspect-interrogation controls. |
+| 8 | Investigation Timeline | View chronological events and timeline controls. |
+| 9 | Case Connection Engine | Explore a visual network of suspects and evidence. |
+| 10 | Case Analysis | View analysis progress indicators and results. |
+| 11 | Final Deduction | Select a suspected culprit, motive, and supporting evidence. |
+| 12 | Case Result | View the case outcome and result-screen actions. |
+
+### Case Cards
+
+The case-selection interface displays four mystery scenarios:
+
+1. **The Stolen Diamond**
+2. **The Library Code**
+3. **The Poisoned Drink**
+4. **The Missing Prototype**
+
+These are the scenarios represented in the current interface. Their appearance in the UI does not by itself imply that each case has a complete, independent investigation engine or persistent case database.
+
+## Technology Stack
+
+| Technology | Usage |
+|---|---|
+| Java 17+ | Core application language |
+| Java Swing | Windows, panels, forms, and UI controls |
+| AWT | Desktop UI infrastructure and event handling |
+| Java2D | Custom graphics, drawing, and visual effects |
+| SQLite JDBC | Database connectivity dependency |
+| Apache Maven | Dependency management, compilation, and packaging |
+| JUnit 5 | Test framework dependencies |
+
+The current `pom.xml` configures Java 17 compilation and the Maven Shade Plugin for packaging.
+
+## Prerequisites
+
+Install the following software before running the project:
+
+- **JDK 17 or newer**
+- **Apache Maven 3.8 or newer** (if running Maven commands directly)
+- **Windows PowerShell** for the provided PowerShell scripts
+
+Verify your Java and Maven installations:
+
 ```powershell
-mvn test
+java -version
+javac -version
+mvn -version
 ```
 
-### 2. Package Executable Fat JAR
-Build the standalone shaded JAR:
-```powershell
-mvn package -DskipTests
-```
-The output file is generated at `target/mystery-vault-1.0.0.jar`.
+## Getting Started
 
-### 3. Launch the Application
-Run using the universal PowerShell launcher:
+### 1. Clone the repository
+
+```powershell
+git clone https://github.com/Tharnikaa/Mystery-vault.git
+cd Mystery-vault
+```
+
+### 2. Build the project
+
+Using Maven:
+
+```powershell
+mvn clean package
+```
+
+Alternatively, use the provided PowerShell build script:
+
+```powershell
+.\build.ps1
+```
+
+### 3. Run the application
+
+Using the provided launcher:
+
 ```powershell
 .\run.ps1
 ```
-Or run directly via `java -jar`:
+
+Or run the packaged JAR:
+
 ```powershell
 java -jar target/mystery-vault-1.0.0.jar
 ```
-Or double-click:
-```cmd
-run.bat
+
+The JAR must first be built if it is not already present.
+
+**Note:** The repository's build and launch scripts should be used as provided. If a command fails, verify the JDK installation, Maven configuration, and the script's execution requirements.
+
+## Navigation
+
+The interface is designed to guide users through the following sequence:
+
+**Main Menu → Detective Profile → Case Selection → Investigation Hub → Investigation Screens → Final Deduction → Case Result**
+
+The interface also provides navigation controls and quick screen switching for demonstration and review.
+
+Keyboard shortcuts documented by the current interface:
+
+| Shortcut | Screen |
+|---|---|
+| `1`–`9` | Screens 1–9 |
+| `0` | Case Analysis |
+| `-` | Final Deduction |
+| `=` | Case Result |
+
+Shortcut availability depends on the application's current implementation and keyboard-focus handling.
+
+## Project Structure
+
+The repository uses a standard Maven project configuration.
+
+```text
+Mystery-vault/
+├── src/
+│   └── main/
+│       ├── java/
+│       │   └── com/
+│       │       └── mysteryvault/
+│       │           └── ...
+│       └── resources/
+│           └── ...
+├── pom.xml
+├── build.ps1
+├── run.ps1
+├── run.bat
+├── .gitignore
+└── README.md
 ```
 
+The `src/main` directory contains the application source and resources. The `pom.xml` defines the Java version, dependencies, and build plugins.
+
+## Current Project Scope
+
+The current `main` branch is presented as a **desktop interface prototype**.
+
+Its focus is the visual layout and navigation of the detective investigation experience. UI elements such as suspect selection, evidence examination, interrogation, clue connections, and final deduction should not automatically be interpreted as fully implemented game mechanics.
+
+The following capabilities require separate verification before being described as complete:
+
+- Independent case data and case-specific evidence.
+- Functional suspect interrogation and contradiction detection.
+- Persistent player profiles, XP, and case statistics.
+- Prerequisite-based clue unlocking.
+- Timeline conflict analysis.
+- Database-backed deduction validation and scoring.
+- Automated tests and verified test results.
+- Exportable case reports and persistent save/resume functionality.
+
+SQLite JDBC is included as a dependency in the Maven configuration; this alone does not establish that the complete game uses a working SQLite database.
+
+## Future Development
+
+Potential next steps for evolving the prototype into a complete detective game include:
+
+- Implementing distinct storylines, suspects, and evidence for each case.
+- Connecting interface actions to investigation logic.
+- Adding persistent storage for player progress and case state.
+- Implementing clue dependencies and timeline analysis.
+- Validating final deductions against case-specific solutions.
+- Adding automated tests for the investigation workflow.
+- Verifying packaging and launch behavior on a clean installation.
+
+## Repository
+
+GitHub: https://github.com/Tharnikaa/Mystery-vault
+
 ---
 
-## 🧪 Automated Test Suite
-
-MysteryVault includes 39 automated unit and integration tests covering all critical engine layers:
-
-| Test Class | Focus Area | Tests | Status |
-|---|---|---|---|
-| `CaseDatabaseManagerTest` | DB creation, foreign key isolation, safe re-initialization | 5 | PASSED |
-| `ClueUnlockEngineTest` | Clue unlock prerequisite validation & DB updates | 5 | PASSED |
-| `StatementRegexExtractorTest` | Regex time/date/location parsing from statements | 4 | PASSED |
-| `ConcurrentAnalysisManagerTest` | Parallel analytical tasks via `ExecutorService` | 2 | PASSED |
-| `CaseSolverEngineTest` | Deduction scoring rubric, suspect/motive validation | 8 | PASSED |
-| `ReportGeneratorServiceTest` | Official dossier compilation & file export | 2 | PASSED |
-| `IntegratedAdaptersTest` | All 10 Swing adapters verified against SQLite databases | 9 | PASSED |
-| `ConnectionPanelTest` | Graph canvas rendering & relationship metrics | 1 | PASSED |
-| `ResultPanelTest` | Case results & verdict presentation | 3 | PASSED |
-| **Total** | | **39** | **100% Pass** |
-
----
-
-## 🎮 Navigation & Game Controls
-
-- **Intuitive In-Game Flow:** Buttons on each screen guide players naturally (e.g., *Inspect Evidence* ➔ *Examine* ➔ *Interrogate* ➔ *Deduce*).
-- **Navigation Bar & Back Button (`<`):** Navigate backward through screen history.
-- **Quick-Jump Switcher:** A discrete bottom toolbar allows instant switching between any of the 12 screens during evaluation or review.
-- **Keyboard Shortcuts:**
-  - Keys `1` through `9`: Screens 1–9
-  - Key `0`: Screen 10 (Analysis)
-  - Key `-`: Screen 11 (Deduction)
-  - Key `=`: Screen 12 (Result)
-  - `Ctrl + N`: New Case Dialog
+*Built with Java Swing, AWT, and Java2D.*
