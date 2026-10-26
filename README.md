@@ -2,7 +2,7 @@
 
 **A Desktop Detective Mystery Game UI Built with Java Swing**
 
-MysteryVault is a Java desktop detective game prototype that presents a cinematic investigation experience. Players navigate through detective profiles, case selection, suspects, evidence, interrogations, timelines, clue connections, case analysis, and final deduction screens.
+MysteryVault is a Java desktop detective game prototype that presents a cinematic investigation experience. Players navigate through detective profiles, case selection, suspects, evidence, interrogations, timelines, suspect profile , investigator , clue connections, case analysis, and final deduction screens.
 
 The project focuses on a native desktop interface built with Java Swing, AWT, and Java2D, featuring a dark noir theme, gold accents, custom-drawn components, and screen-to-screen navigation.
 
